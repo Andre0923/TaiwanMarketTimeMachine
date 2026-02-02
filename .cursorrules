@@ -1,0 +1,105 @@
+# Cursor AI 全域規範 (Global Rules)
+
+> **專案憲章**: `.specify/memory/constitution.md`  
+> 本文件為 Cursor AI 的快速全域參考規範，所有規範 MUST 符合專案憲章。
+
+## 語言規範
+- 回覆與文件敘述一律使用繁體中文。
+- 規範關鍵字維持英文：MUST / SHOULD / MAY / NEVER / STOP / ASK。
+
+## Governance（NON-NEGOTIABLE）
+- 若需求不明確、資料欄位定義不清、流程邏輯或架構決策有疑慮：
+  MUST 先 ASK 人類，不得自行假設或直接修改。
+- 任何重大變更（跨模組重構、API / 行為調整、資料模型或格式變更、架構變更）前：
+  MUST 先提出變更提案並等待人類明確批准。
+
+## System Spec Protection
+- NEVER 修改 `specs/system/**`，
+  除非指令中明確指出正在執行 UNIFY FLOW，
+  且清楚指定要修改的檔案與段落。
+- 在非 UNIFY FLOW 期間修改 `specs/system/**`：MUST NOT。
+- UNIFY FLOW 的 SOP 文件位於：`specs/system/unify-flow.md`。
+
+## Debug / Bug Fix 規範
+- 在 DEBUG / BUG FIX 任務中，優先採取：
+  - 程式碼修正
+  - 測試補強
+  - Feature 層級文件調整（不包含 `specs/system/**`）
+- 不得以「修 bug」為理由，私自調整 system-level specification
+  （如有需要，必須走 UNIFY FLOW）。
+
+## Change Discipline
+- 所有修改 MUST 保持最小且聚焦。
+- 未經明確要求，不得進行：
+  - drive-by refactor
+  - 純格式調整
+  - 大規模重新命名或搬移檔案
+
+## 跨檔案修改規範
+- 若修改涉及多個檔案，動手前 MUST 先提供一份簡要 PLAN：
+  - 以 3–6 個 bullet points 說明修改步驟與影響範圍。
+
+## After Changes
+- MUST 說明已執行或應執行的 CHECKS（tests / lint / build）。
+- MUST 清楚摘要「修改了什麼」以及「為什麼要這樣改」。
+
+## Git Commit 規範
+- 提交前請先 `git add .`
+- 使用以下格式提交：
+  - `git commit -m "<type>: <繁體中文摘要>"`
+- 範例：
+  - `git commit -m "fix: 修復登入流程的例外狀況"`
+  - `git commit -m "docs: 補充 Unify Flow 操作說明"`
+- 若提交內容可能影響規格或系統行為：
+  MUST 在 commit message 或 PR 說明中清楚交代影響範圍與驗證方式。
+
+## Coding 規範（Constitution §3, §5）
+
+### Test-First 原則（§3.4）
+- 新增或修改行為時，MUST 先更新 `tests/` 中的測試，再修改 `src/` 程式碼。
+- 測試 SHOULD 對應 User Story 的 Acceptance Criteria。
+- 若無法先寫測試，MUST 在 `plan.md` 記錄原因與替代驗證方式。
+
+### Logging 規範（§3.7）🔴 NON-NEGOTIABLE
+- MUST 使用 `src/logger.py`（禁止使用 print）。
+- 所有日誌 MUST 寫入 `logs/YYYYMMDD_HHMMSS.log`。
+- 新增或修改自動化流程時，MUST 在 `plan.md` 說明 logging 策略。
+
+### Python Environment（§5.3）🔴 NON-NEGOTIABLE
+- MUST 使用 `uv` 作為唯一的環境與依賴管理工具。
+- 安裝套件：`uv add <package>`
+- 執行程式：`uv run <script.py>`
+- NEVER 使用：`pip`, `venv`, `pipenv`, `conda`, `poetry`
+
+### Code Structure（§5.1）
+**MUST 遵守**:
+- 單一職責原則 (Single Responsibility Principle)
+- 低耦合、高內聚 (Low Coupling, High Cohesion)
+- 模組 MUST 自給自足、可獨立測試、具備文件
+- 註解規範：
+  - `# TODO:` - 待完成功能
+  - `# FIXME:` - 需要修復的問題
+  - `# HACK:` - 臨時解決方案（MUST 附原因與改善方向）
+
+### Documentation Consistency（§5.2）🔴 NON-NEGOTIABLE
+- 修改程式碼時，MUST 同步更新相關文件。
+- `spec.md`、`plan.md`、`tasks.md` 與程式碼 MUST 語意一致。
+- 文件與程式碼 MUST 於同一 PR 完成同步。
+
+## Cursor 特定規範
+
+### Ask Mode vs Agent Mode
+- Ask Mode（唯讀）：只能讀取檔案、提供建議，不能修改
+- Agent Mode：可以直接修改檔案、執行指令
+- 若使用者在 Ask Mode 要求修改，MUST 提示切換到 Agent Mode
+
+### Tool Usage
+- 優先使用專用工具（read_file, search_replace, write）而非終端機指令
+- 批次讀取檔案時，使用並行 tool calls 提高效率
+- 修改檔案時，使用 search_replace 精確替換，避免整檔覆寫
+
+### Code References
+- 引用現有程式碼：使用 \`\`\`startLine:endLine:filepath 格式
+- 展示新程式碼：使用 \`\`\`language 格式
+- NEVER 混用這兩種格式
+
