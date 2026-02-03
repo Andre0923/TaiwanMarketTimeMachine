@@ -29,10 +29,10 @@
 
 | US ID | 摘要 | Group | 狀態 |
 |-------|------|-------|------|
-| US A-1 | K 線與成交量基礎繪圖 | A | ⏳ 尚未規劃 |
-| US A-2 | 圖表互動操作（Zoom/Pan/Crosshair） | A | ⏳ 尚未規劃 |
-| US A-3 | 小圖點擊放大檢視 | A | ⏳ 尚未規劃 |
-| US A-4 | 圖表載入狀態與錯誤處理 | A | ⏳ 尚未規劃 |
+| US A-1 | K 線與成交量基礎繪圖 | A | 🧩 M01 執行中 |
+| US A-2 | 圖表互動操作（Zoom/Pan/Crosshair） | A | 🧩 M01 執行中 |
+| US A-3 | 小圖點擊放大檢視 | A | 🧩 M01 執行中 |
+| US A-4 | 圖表載入狀態與錯誤處理 | A | 🧩 M01 執行中 |
 | US B-1 | 結構化條件查詢 | B | ⏳ 尚未規劃 |
 | US B-2 | Grid 多圖並列顯示 | B | ⏳ 尚未規劃 |
 | US B-3 | 事件日置中對齊 | B | ⏳ 尚未規劃 |
@@ -50,7 +50,7 @@
 | US F-1 | 自然語言轉 SQL 查詢 | F | ⏳ 尚未規劃 |
 | US F-2 | AI 生成 SQL 驗證與修正 | F | ⏳ 尚未規劃 |
 | US G-1 | 查詢結果快取機制 | G | ⏳ 尚未規劃 |
-| US G-2 | API Response 固定格式設計 | G | ⏳ 尚未規劃 |
+| US G-2 | API Response 固定格式設計 | G | 🧩 M01 執行中 |
 
 ---
 
@@ -62,8 +62,8 @@
 
 | 狀態 | 圖示 | 數量 | 百分比 |
 |------|------|------|--------|
-| 尚未規劃 | ⏳ | 22 | 100% |
-| Milestone 執行中 | 🧩 | 0 | 0% |
+| 尚未規劃 | ⏳ | 17 | 77% |
+| Milestone 執行中 | 🧩 | 5 | 23% |
 | 部分完成 | 🔶 | 0 | 0% |
 | 已完成 | ✅ | 0 | 0% |
 
@@ -71,10 +71,15 @@
 
 ### 依狀態分類
 
-#### ⏳ 尚未規劃（22 個）
+#### 🧩 Milestone 執行中（5 個）
 
-**Group A — 基礎繪圖與互動**
+**Group A — 基礎繪圖與互動**（Milestone M01）
 - US A-1, US A-2, US A-3, US A-4
+
+**Group G — 效能與快取機制**（Milestone M01）
+- US G-2
+
+#### ⏳ 尚未規劃（17 個）
 
 **Group B — Strategy Grid 模式**
 - US B-1, US B-2, US B-3, US B-4
@@ -92,15 +97,18 @@
 - US F-1, US F-2
 
 **Group G — 效能與快取機制**
-- US G-1, US G-2
+- US G-1
 
 ---
 
 ## 🎯 Milestone 追蹤
 
-### 已完成的 Milestone
+### 已規劃的 Milestone
 
-（尚無）
+**[M01 — 基礎繪圖與 API 格式](../Milestone/M01-basic-chart-and-api.md)** ⏳ 規劃中
+- 包含：US A-1, A-2, A-3, A-4, G-2
+- 狀態：已建立，尚未開始開發
+- 下一步：執行 `/flowkit.Milestone-context` 從 PRD 擷取設計上下文
 
 ### 進行中的 Milestone
 
@@ -110,9 +118,9 @@
 
 建議依以下順序規劃 Milestone：
 
-1. **M01 — 基礎繪圖與資料載入**（Group A + 部分 G）
+1. ✅ **M01 — 基礎繪圖與 API 格式**（已規劃）
 2. **M02 — Strategy Grid 核心**（Group B + C）
-3. **M03 — 事件研究統計**（Group D + E）
+3. **M03 — 事件研究統計**（Group D + E + US G-1）
 4. **M04 — AI 協作增強**（Group F）
 
 ---
