@@ -60,9 +60,6 @@ You **MUST** consider the user input before proceeding (if not empty).
    - Suggested MVP scope (typically just User Story 1)
    - Format validation: Confirm ALL tasks follow the checklist format (checkbox, ID, labels, file paths)
 
-6. **Git Checkpoint**: After tasks.md is generated, execute `git add . && git commit -m "tasks: generate tasks.md for {FEATURE_ID}" && git push`
-   - If subsequent `/speckit.analyze` requires corrections, commit again: `git commit -m "chore: remediate analyze findings for {FEATURE_ID}"`
-
 Context for task generation: $ARGUMENTS
 
 The tasks.md should be immediately executable - each task must be specific enough that an LLM can complete it without additional context.

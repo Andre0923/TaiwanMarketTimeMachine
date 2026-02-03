@@ -3,16 +3,7 @@ description: Create or update the feature specification from a natural language 
 handoffs: 
   - label: Build Technical Plan
     agent: speckit.plan
-    prompt: |
-      Create a plan for the spec.
-      
-      I am building with...
-  - label: Generate System Context
-    agent: flowkit.system-context
-    prompt: |
-      建立專案 System Context，為 Plan 階段準備上下文。
-      
-      **建議必要**（除非是第一個 Feature）。執行完成後請將 spec.md frontmatter 的 `system_context` 設為 `true`。
+    prompt: Create a plan for the spec. I am building with...
   - label: Clarify Spec Requirements
     agent: speckit.clarify
     prompt: Clarify specification requirements
@@ -55,7 +46,7 @@ Given that feature description, do this:
    b. Find the highest feature number across all sources for the short-name:
       - Remote branches: `git ls-remote --heads origin | grep -E 'refs/heads/[0-9]+-<short-name>$'`
       - Local branches: `git branch | grep -E '^[* ]*[0-9]+-<short-name>$'`
-      - Specs directories: Check for directories matching `specs/features/[0-9]+-<short-name>`
+      - Specs directories: Check for directories matching `specs/[0-9]+-<short-name>`
    
    c. Determine the next available number:
       - Extract all numbers from all three sources
@@ -78,31 +69,7 @@ Given that feature description, do this:
 
 3. Load `.specify/templates/spec-template.md` to understand required sections.
 
-4. **Detect and Record Milestone (Optional)**:
-   - **Milestone Detection**:
-     - Check if user references a Milestone file in description (e.g., "M01-Core-CLI.md", "根據 M02-Core-Workflow.md")
-     - Extract Milestone number from filename pattern `MNN-*` (e.g., "M01-Core-CLI.md" → "M01")
-   
-   - **IF Milestone Detected**:
-     - Record milestone number in YAML frontmatter: `milestone: M01`
-     - Construct context file path: `docs/requirements/Milestone/M{NN}-context.md`
-     - **IF EXISTS** the matching context file:
-       - Read the full context to understand Milestone goals, User Stories, technical constraints
-       - Use this context to align Feature spec with Milestone objectives
-     - **IF NOT EXISTS**: Log info "No context file for M{NN}" and proceed
-   
-   - **IF NO Milestone Detected**: Set frontmatter `milestone: null` (standalone Feature)
-   - This step is non-blocking; missing Milestone or context should not stop the specify flow
-
-5. **Load UI Context (Optional)**:
-   - **IF EXISTS**: `specs/system/ui/` directory
-     - Read `specs/system/ui/README.md` for UI rule index
-     - Read `specs/system/ui/ui-structure.md` for Screen/Component IDs (headers only)
-     - Read `specs/system/ui/ux-guidelines.md` for Pattern/State IDs (headers only)
-   - **IF NOT EXISTS**: Mark `[UI-TBD: description]` for any UI-related AC
-   - This step is non-blocking; missing UI files should not stop the specify flow
-
-6. Follow this execution flow:
+4. Follow this execution flow:
 
     1. Parse user description from Input
        If empty: ERROR "No feature description provided"
@@ -126,37 +93,11 @@ Given that feature description, do this:
        Include both quantitative metrics (time, performance, volume) and qualitative measures (user satisfaction, task completion)
        Each criterion must be verifiable without implementation details
     7. Identify Key Entities (if data involved)
-    8. **Assess UI Impact** (if UI Context loaded or UI mentioned in description):
-       - Determine UI Impact level: None / Low / High
-       - **None**: Pure backend/data changes, no UI involvement
-       - **Low**: Modifications to existing screens/patterns (button text, field changes)
-       - **High**: New screens, new interaction patterns, behavioral changes
-       - For each UI element, reference existing `[UI-SCR-###]` / `[UI-PAT-###]` / `[UI-STATE-###]` or mark as `[UI-TBD: description]`
-       - This assessment is **non-blocking**: `[UI-TBD]` items will be resolved in plan phase
-    
-    9. **Determine UI Maturity Target** (if UI Impact ≠ None):
-       - Assess current maturity of referenced UI elements
-       - **L0 (Draft)**: Partial or placeholder definitions, still evolving
-       - **L1 (Buildable)**: Complete definitions meeting all 3 conditions:
-         1. Global States（loading/empty/error）有明確規則
-         2. 不可逆操作已定義 confirmation policy
-         3. 主要 Screen/Flow 有完整 catalog
-       - Set **UI Maturity Target** in spec: L0 or L1
-       - **L1 required for implement phase** - 若 Target = L1 但目前 = L0，plan 階段需安排補齊任務
-    
-    10. **Identify UI Unknowns** (if UI Impact ≠ None, max 3):
-        - List unresolved UI decisions that may affect implementation
-        - Examples: Component library 選擇、Dark mode 支援、Mobile responsive 策略
-        - Mark as `[NEEDS UI DEFINITION: description]` if blocking implement
-        - Unknowns will be addressed during plan phase
-    
-    11. Return: SUCCESS (spec ready for planning)
+    8. Return: SUCCESS (spec ready for planning)
 
 5. Write the specification to SPEC_FILE using the template structure, replacing placeholders with concrete details derived from the feature description (arguments) while preserving section order and headings.
 
-6. Write the specification to SPEC_FILE using the template structure, replacing placeholders with concrete details derived from the feature description (arguments) while preserving section order and headings.
-
-7. **Specification Quality Validation**: After writing the initial spec, validate it against quality criteria:
+6. **Specification Quality Validation**: After writing the initial spec, validate it against quality criteria:
 
    a. **Create Spec Quality Checklist**: Generate a checklist file at `FEATURE_DIR/checklists/requirements.md` using the checklist template structure with these validation items:
 
@@ -191,14 +132,6 @@ Given that feature description, do this:
       - [ ] User scenarios cover primary flows
       - [ ] Feature meets measurable outcomes defined in Success Criteria
       - [ ] No implementation details leak into specification
-      
-      ## UI/UX Assessment (if applicable)
-      
-      - [ ] UI Impact level determined (None/Low/High)
-      - [ ] UI Maturity Target set (L0/L1) if UI Impact ≠ None
-      - [ ] UI Unknowns identified (max 3) if any
-      - [ ] All UI references use valid IDs or `[UI-TBD]` markers
-      - [ ] No `[NEEDS UI DEFINITION]` markers remain (or documented as blockers)
       
       ## Notes
       
@@ -257,10 +190,6 @@ Given that feature description, do this:
    d. **Update Checklist**: After each validation iteration, update the checklist file with current pass/fail status
 
 7. Report completion with branch name, spec file path, checklist results, and readiness for the next phase (`/speckit.clarify` or `/speckit.plan`).
-
-8. Report completion with branch name, spec file path, checklist results, UI Impact assessment, and readiness for the next phase (`/speckit.clarify` or `/speckit.plan`).
-
-9. **Git Checkpoint**: After spec.md is created and validated, execute `git add . && git commit -m "feat: 建立 Feature Spec [FEATURE_NAME]" && git push`.
 
 **NOTE:** The script creates and checks out the new branch and initializes the spec file before writing.
 
