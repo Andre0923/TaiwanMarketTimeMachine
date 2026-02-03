@@ -1,5 +1,12 @@
 ---
 description: Execute the implementation plan by processing and executing all tasks defined in tasks.md
+handoffs:
+  - label: 建立追溯索引
+    agent: flowkit.trace
+    prompt: 實作完成，建立規格-程式碼追溯索引
+  - label: Debug / 微調
+    agent: flowkit.refine-loop
+    prompt: 實作完成後需要 debug 或微調
 ---
 
 ## User Input
@@ -8,7 +15,9 @@ description: Execute the implementation plan by processing and executing all tas
 $ARGUMENTS
 ```
 
-You **MUST** consider the user input before proceeding (if not empty).
+> 💡 **`--default` 模式**：輸入 `--default` 等同於無額外指示，直接執行預設流程。
+
+You **MUST** consider the user input before proceeding (if not empty or `--default`).
 
 ## Outline
 
@@ -45,15 +54,69 @@ You **MUST** consider the user input before proceeding (if not empty).
      - Display the table showing all checklists passed
      - Automatically proceed to step 3
 
-3. Load and analyze the implementation context:
+3. **UI Gate Check (If UI Impact ≠ None)**:
+   - Read spec.md's "UI/UX 影響評估" section
+   - **IF UI Impact = None**: Skip this step entirely
+   - **IF UI Impact = Low or High**:
+     
+     a. **Check [UI-TBD] and [NEEDS UI DEFINITION] Resolution**:
+        - Scan spec.md and plan.md for any remaining `[UI-TBD]` markers
+        - Scan for any remaining `[NEEDS UI DEFINITION]` markers
+        - Each marker should have been resolved to a proper UI ID
+        
+     b. **Check UI Maturity (L1 Gate)**:
+        - For each UI ID referenced, verify it exists in `specs/system/ui/`
+        - Verify the definition is at **L1 (Buildable)** level, not L0 (Draft)
+        - **L1 最低要求**（三項皆需符合）:
+          1. Global States（loading/empty/error）有明確規則
+          2. 不可逆操作已定義 confirmation policy
+          3. 主要 Screen/Flow 有完整 catalog
+     
+     c. **Gate Decision**:
+        - **PASS**: All markers resolved AND all UI IDs at L1 AND L1 prerequisites met
+        - **FAIL**: Any unresolved markers OR any UI ID still at L0 OR L1 prerequisites missing
+        
+     d. **If Gate FAILS**:
+        - Display unresolved items table
+        - **STOP** and report:
+          ```
+          ❌ UI GATE FAILED
+          
+          Unresolved [UI-TBD] items:
+          - [UI-TBD: description] → Please define in ui-structure.md and assign ID
+          
+          Unresolved [NEEDS UI DEFINITION] items:
+          - [NEEDS UI DEFINITION: description] → Please complete definition
+          
+          UI IDs not at L1 (Buildable):
+          - [UI-SCR-###] still at L0 → Please complete definition in ui-structure.md
+          
+          L1 Prerequisites Missing:
+          - [ ] Global States 規則尚未定義
+          - [ ] Confirmation policy 尚未定義
+          - [ ] Screen/Flow catalog 不完整
+          
+          Recommended actions:
+          1. Complete UI Discovery Tasks from plan.md
+          2. Complete UI file update tasks from plan.md
+          3. Ensure all UI IDs reach L1 maturity
+          4. Re-run /speckit.implement
+          ```
+        - Wait for user to confirm proceed or fix issues
+        
+     e. **If Gate PASSES**:
+        - Log "UI Gate: ✅ PASS (L1 Verified)" and proceed to step 4
+
+4. Load and analyze the implementation context:
    - **REQUIRED**: Read tasks.md for the complete task list and execution plan
    - **REQUIRED**: Read plan.md for tech stack, architecture, and file structure
    - **IF EXISTS**: Read data-model.md for entities and relationships
    - **IF EXISTS**: Read contracts/ for API specifications and test requirements
    - **IF EXISTS**: Read research.md for technical decisions and constraints
    - **IF EXISTS**: Read quickstart.md for integration scenarios
+   - **IF EXISTS** (and UI Impact ≠ None): Read `specs/system/ui/` for UI specifications
 
-4. **Project Setup Verification**:
+5. **Project Setup Verification**:
    - **REQUIRED**: Create/verify ignore files based on actual project setup:
 
    **Detection & Creation Logic**:
@@ -97,27 +160,77 @@ You **MUST** consider the user input before proceeding (if not empty).
    - **Terraform**: `.terraform/`, `*.tfstate*`, `*.tfvars`, `.terraform.lock.hcl`
    - **Kubernetes/k8s**: `*.secret.yaml`, `secrets/`, `.kube/`, `kubeconfig*`, `*.key`, `*.crt`
 
-5. Parse tasks.md structure and extract:
+6. Parse tasks.md structure and extract:
    - **Task phases**: Setup, Tests, Core, Integration, Polish
    - **Task dependencies**: Sequential vs parallel execution rules
    - **Task details**: ID, description, file paths, parallel markers [P]
    - **Execution flow**: Order and dependency requirements
 
-6. Execute implementation following the task plan:
+7. Execute implementation following the task plan:
    - **Phase-by-phase execution**: Complete each phase before moving to the next
    - **Respect dependencies**: Run sequential tasks in order, parallel tasks [P] can run together  
    - **Follow TDD approach**: Execute test tasks before their corresponding implementation tasks
    - **File-based coordination**: Tasks affecting the same files must run sequentially
    - **Validation checkpoints**: Verify each phase completion before proceeding
+   - **Spec Reference 註解**：建立新檔案時，若該任務有 [US*] 標籤，加入 @spec 註解（詳見下方規則）
+   - **Git Checkpoint**: After completing each phase, execute `git add . && git commit -m "feat: {phase_name} (T00X-T00Y)" && git push`
 
-7. Implementation execution rules:
+8. **Spec Reference 註解規則**（用於 Traceability）：
+
+   **觸發條件**：建立新檔案時，該任務有 `[US*]` 標籤
+   
+   **格式規範**：
+   ```python
+   # Python
+   # @spec US1 (NNN-feature-name/spec.md#user-story-1)
+   # @spec-ac AC1.1, AC1.2
+   
+   class MyClass:
+       pass
+   ```
+   
+   ```typescript
+   // TypeScript/JavaScript
+   // @spec US1 (NNN-feature-name/spec.md#user-story-1)
+   // @spec-ac AC1.1, AC1.2
+   
+   export class MyClass { }
+   ```
+   
+   ```rust
+   // Rust/C/C++
+   // @spec US1 (NNN-feature-name/spec.md#user-story-1)
+   // @spec-ac AC1.1, AC1.2
+   
+   pub struct MyStruct { }
+   ```
+   
+   **欄位說明**：
+   - `@spec US{N}`：對應 spec.md 的 User Story 編號
+   - `(NNN-feature-name/spec.md#user-story-{N})`：Spec 檔案的相對路徑與 anchor
+   - `@spec-ac AC{N}.{M}`：（選用）對應的 Acceptance Criteria 編號
+
+   **範例（從 tasks.md）**：
+   ```markdown
+   - [ ] T014 [US1] Implement UserService in src/services/user_service.py
+   ```
+   **產生的註解**：
+   ```python
+   # @spec US1 (001-user-management/spec.md#user-story-1)
+   # Generated by SpecKit Implement
+   
+   class UserService:
+       ...
+   ```
+
+9. Implementation execution rules:
    - **Setup first**: Initialize project structure, dependencies, configuration
    - **Tests before code**: If you need to write tests for contracts, entities, and integration scenarios
    - **Core development**: Implement models, services, CLI commands, endpoints
    - **Integration work**: Database connections, middleware, logging, external services
    - **Polish and validation**: Unit tests, performance optimization, documentation
 
-8. Progress tracking and error handling:
+10. Progress tracking and error handling:
    - Report progress after each completed task
    - Halt execution if any non-parallel task fails
    - For parallel tasks [P], continue with successful tasks, report failed ones
@@ -125,7 +238,7 @@ You **MUST** consider the user input before proceeding (if not empty).
    - Suggest next steps if implementation cannot proceed
    - **IMPORTANT** For completed tasks, make sure to mark the task off as [X] in the tasks file.
 
-9. Completion validation:
+11. Completion validation:
    - Verify all required tasks are completed
    - Check that implemented features match the original specification
    - Validate that tests pass and coverage meets requirements

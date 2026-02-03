@@ -23,7 +23,8 @@
 | **Phase 4** | 部署至 Cursor | MUST | Command 檔案 |
 | **Phase 5** | 撰寫功能說明文件 | MUST | 使用者導向說明 |
 | **Phase 6** | 更新索引與目錄文件 | MUST | 維護文件一致性 |
-| **Phase 7** | 驗證與提交 | MUST | 確保部署完整 |
+| **Phase 7** | 更新版本歷史 | MUST | 記錄改版資訊 |
+| **Phase 8** | 驗證與提交 | MUST | 確保部署完整 |
 
 ---
 
@@ -243,9 +244,39 @@ agent: flowkit.{指令名稱}
 
 ---
 
-## Phase 7：驗證與提交
+## Phase 7：更新版本歷史
 
-### 7.1 完整性檢查清單
+### 7.1 更新 FlowKit 版本歷史
+
+**位置**：`docs/76.改版歷史/flowkit-version-history.md`
+
+- [ ] 在對應指令區塊新增版本記錄
+- [ ] 若為新指令，新增獨立區塊
+- [ ] 記錄版本號、日期、變更說明
+
+**格式範例**：
+
+```markdown
+## flowkit.{指令名稱}
+
+| 版本 | 日期 | 變更說明 |
+|------|------|----------|
+| 1.0.0 | 2026-XX-XX | 初始版本 |
+```
+
+### 7.2 版本號規範
+
+| 版本類型 | 說明 | 範例 |
+|----------|------|------|
+| Major (X.0.0) | 重大變更、不相容的修改 | 流程架構變更 |
+| Minor (1.X.0) | 新功能、向後相容的修改 | 新增參數支援 |
+| Patch (1.0.X) | Bug 修復、微調 | 修正錯字 |
+
+---
+
+## Phase 8：驗證與提交
+
+### 8.1 完整性檢查清單
 
 **必要檔案**：
 
@@ -255,6 +286,7 @@ agent: flowkit.{指令名稱}
 | Prompt 檔案 | `.github/prompts/flowkit.{名稱}.prompt.md` | [ ] |
 | Cursor Command | `.cursor/commands/flowkit.{名稱}.md` | [ ] |
 | 功能說明 | `docs/77.flowkit相關文件/功能說明-flowkit.{名稱}.md` | [ ] |
+| 版本歷史 | `docs/76.改版歷史/flowkit-version-history.md` | [ ] |
 
 **選配檔案**：
 
@@ -269,14 +301,15 @@ agent: flowkit.{指令名稱}
 |------|------|------|
 | FlowKit README | `docs/77.flowkit相關文件/README.md` | [ ] |
 | 目錄結構 | `docs/00.目錄結構.md` | [ ] |
+| 版本歷史 | `docs/76.改版歷史/flowkit-version-history.md` | [ ] |
 
-### 7.2 一致性檢查
+### 8.2 一致性檢查
 
 - [ ] GitHub Copilot Agent 與 Cursor Command 內容一致（包含 YAML frontmatter）
 - [ ] 所有文件使用相同的指令名稱
-- [ ] 版本號一致
+- [ ] 版本號一致（指令內與版本歷史）
 
-### 7.3 Git 提交
+### 8.3 Git 提交
 
 ```bash
 git add .
@@ -291,6 +324,7 @@ git commit -m "feat: 新增 flowkit.{指令名稱} 指令化套件
 
 修改:
 - docs/77.flowkit相關文件/README.md
+- docs/76.改版歷史/flowkit-version-history.md
 - docs/00.目錄結構.md"
 
 git push

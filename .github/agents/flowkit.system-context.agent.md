@@ -25,7 +25,9 @@ handoffs:
 $ARGUMENTS
 ```
 
-若 `$ARGUMENTS` 為空，預設執行「更新現有 system-context.md」；若包含 `--init`，則執行「初始化新系統上下文」。
+> 💡 **`--default` 模式**：輸入 `--default` 等同於無額外指示，直接執行預設流程。
+
+若 `$ARGUMENTS` 為空或 `--default`，預設執行「更新現有 system-context.md」；若包含 `--init`，則執行「初始化新系統上下文」。
 
 ---
 

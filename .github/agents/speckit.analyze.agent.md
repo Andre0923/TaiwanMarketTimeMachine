@@ -8,7 +8,9 @@ description: Perform a non-destructive cross-artifact consistency and quality an
 $ARGUMENTS
 ```
 
-You **MUST** consider the user input before proceeding (if not empty).
+> 💡 **`--default` 模式**：輸入 `--default` 等同於無額外指示，直接執行預設流程。
+
+You **MUST** consider the user input before proceeding (if not empty or `--default`).
 
 ## Goal
 
@@ -111,6 +113,21 @@ Focus on high-signal findings. Limit to 50 findings total; aggregate remainder i
 - Task ordering contradictions (e.g., integration tasks before foundational setup tasks without dependency note)
 - Conflicting requirements (e.g., one requires Next.js while other specifies Vue)
 
+#### G. UI Consistency (Conditional: UI Impact ≠ None)
+
+**Trigger**: Only run if spec.md contains "UI Impact" = Low or High
+
+| Check | Description | Severity |
+|-------|-------------|----------|
+| G1. ID Existence | UI IDs referenced in spec.md (`[UI-SCR-###]`, `[UI-PAT-###]`, `[UI-STATE-###]`) must exist in `specs/system/ui/` | HIGH |
+| G2. TBD Resolution | All `[UI-TBD]` markers should have corresponding tasks in plan.md to resolve them | MEDIUM |
+| G3. State Coverage | Loading/Error/Empty states should reference `[UI-STATE-###]` patterns | MEDIUM |
+| G4. Confirmation Rules | Irreversible actions should follow ux-guidelines.md confirmation rules | MEDIUM |
+| G5. Maturity Gate | If UI Maturity Target = L1, verify L1 prerequisites exist: (1) Global States 規則 (2) Confirmation policy (3) Screen/Flow catalog | HIGH |
+| G6. NEEDS UI DEFINITION | All `[NEEDS UI DEFINITION]` markers must have resolution tasks in plan.md | HIGH |
+
+**Skip Condition**: If UI Impact = None, skip entire G channel and note "G channel skipped: UI Impact = None"
+
 ### 5. Severity Assignment
 
 Use this heuristic to prioritize findings:
@@ -161,6 +178,10 @@ At end of report, output a concise Next Actions block:
 ### 8. Offer Remediation
 
 Ask the user: "Would you like me to suggest concrete remediation edits for the top N issues?" (Do NOT apply them automatically.)
+
+### 9. Git Checkpoint (If Remediation Applied)
+
+**After user-approved remediation edits are applied**, execute `git add . && git commit -m "docs: Analyze 分析 [FEATURE_NAME]" && git push`.
 
 ## Operating Principles
 

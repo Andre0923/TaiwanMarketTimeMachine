@@ -9,7 +9,9 @@ tools: ['github/github-mcp-server/issue_write']
 $ARGUMENTS
 ```
 
-You **MUST** consider the user input before proceeding (if not empty).
+> 💡 **`--default` 模式**：輸入 `--default` 等同於無額外指示，直接執行預設流程。
+
+You **MUST** consider the user input before proceeding (if not empty or `--default`).
 
 ## Outline
 

@@ -1,5 +1,6 @@
----
+
 description: Create or update the project constitution from interactive or provided principle inputs, ensuring all dependent templates stay in sync.
+
 handoffs: 
   - label: Build Specification
     agent: speckit.specify
@@ -12,7 +13,9 @@ handoffs:
 $ARGUMENTS
 ```
 
-You **MUST** consider the user input before proceeding (if not empty).
+> 💡 **`--default` 模式**：輸入 `--default` 等同於無額外指示，直接執行預設流程。
+
+You **MUST** consider the user input before proceeding (if not empty or `--default`).
 
 ## Outline
 
@@ -47,13 +50,17 @@ Follow this execution flow:
    - Read each command file in `.specify/templates/commands/*.md` (including this one) to verify no outdated references (agent-specific names like CLAUDE only) remain when generic guidance is required.
    - Read any runtime guidance docs (e.g., `README.md`, `docs/quickstart.md`, or agent-specific guidance files if present). Update references to principles changed.
 
-5. Produce a Sync Impact Report (prepend as an HTML comment at top of the constitution file after update):
-   - Version change: old → new
-   - List of modified principles (old title → new title if renamed)
-   - Added sections
-   - Removed sections
-   - Templates requiring updates (✅ updated / ⚠ pending) with file paths
-   - Follow-up TODOs if any placeholders intentionally deferred.
+5. Produce a Sync Impact Report:
+   - Update the report file at `.specify/templates/constitution-sync-report.md`
+   - Add a new entry at the top of the "歷史記錄" section following the template format
+   - Required fields:
+     - Version change: old → new
+     - 變更類型（MAJOR / MINOR / PATCH）
+     - 條款變更表格（新增 / 修改 / 移除）
+     - 依賴文件同步狀態（✅ 已同步 / ⚠️ 待更新）
+     - 待辦事項（若有）
+     - 建議 Commit 訊息
+   - Reference: See `constitution-sync-report.md` for full template and examples.
 
 6. Validation before final output:
    - No remaining unexplained bracket tokens.
@@ -67,6 +74,8 @@ Follow this execution flow:
    - New version and bump rationale.
    - Any files flagged for manual follow-up.
    - Suggested commit message (e.g., `docs: amend constitution to vX.Y.Z (principle additions + governance update)`).
+
+9. **Git Checkpoint**: After constitution is updated, execute `git add . && git commit -m "docs: 更新憲法至 vX.Y.Z" && git push`.
 
 Formatting & Style Requirements:
 

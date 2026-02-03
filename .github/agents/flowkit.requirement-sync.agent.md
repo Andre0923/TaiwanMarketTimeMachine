@@ -21,7 +21,9 @@ handoffs:
 $ARGUMENTS
 ```
 
-在繼續執行之前，您**必須（MUST）**考慮使用者輸入（若非空白）。
+> 💡 **`--default` 模式**：輸入 `--default` 等同於無額外指示，直接執行預設流程。
+
+在繼續執行之前，您**必須（MUST）**考慮使用者輸入（若非空白或 `--default`）。
 
 支援的參數：
 - `--feature <path>`：指定 Feature 目錄路徑

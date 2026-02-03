@@ -17,7 +17,9 @@ handoffs:
 $ARGUMENTS
 ```
 
-You **MUST** consider the user input before proceeding (if not empty).
+> 💡 **`--default` 模式**：輸入 `--default` 等同於無額外指示，直接執行預設流程。
+
+You **MUST** consider the user input before proceeding (if not empty or `--default`).
 
 ## Outline
 
@@ -59,6 +61,9 @@ You **MUST** consider the user input before proceeding (if not empty).
    - Independent test criteria for each story
    - Suggested MVP scope (typically just User Story 1)
    - Format validation: Confirm ALL tasks follow the checklist format (checkbox, ID, labels, file paths)
+
+6. **Git Checkpoint**: After tasks.md is generated, execute `git add . && git commit -m "tasks: generate tasks.md for {FEATURE_ID}" && git push`
+   - If subsequent `/speckit.analyze` requires corrections, commit again: `git commit -m "chore: remediate analyze findings for {FEATURE_ID}"`
 
 Context for task generation: $ARGUMENTS
 

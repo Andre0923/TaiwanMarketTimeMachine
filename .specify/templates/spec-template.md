@@ -1,9 +1,14 @@
+---
+milestone: null
+system_context: false
+created: {DATE}
+updated: {DATE}
+---
+
 # Feature Specification: {FEATURE_NAME}
 
 > **Feature ID**: {FEATURE_ID}  
-> **Status**: Draft  
-> **Created**: {DATE}  
-> **Last Updated**: {DATE}
+> **Status**: Draft
 
 ---
 
@@ -96,7 +101,33 @@
 
 ---
 
-## 6. Out of Scope
+## 6. UI/UX 影響評估
+
+> 評估本 Feature 對 UI 的影響程度，供 plan 階段規劃 UI 任務。
+> 若專案無 UI（純 CLI/API），此區塊可標記「N/A」或移除。
+
+| 項目 | 值 |
+|------|-----|
+| **UI Impact** | <!-- None / Low / High --> |
+| **UI Maturity Target** | <!-- L0 / L1 --> |
+| **涉及畫面** | <!-- [UI-SCR-###] 或 [UI-TBD: 描述] 或 N/A --> |
+| **涉及模式** | <!-- [UI-PAT-###] 或 [UI-TBD: 描述] 或 N/A --> |
+| **涉及狀態** | <!-- [UI-STATE-###] 或 [UI-TBD: 描述] 或 N/A --> |
+| **UI Unknowns** | <!-- 最多 3 項，可用 [NEEDS CLARIFICATION] --> |
+
+### UI References（若適用）
+
+> 列出 User Stories 引用的 UI 設計元素。
+> 詳細定義請見 `specs/system/ui/`。
+
+| UI ID | 類型 | 說明 | 所屬 User Story |
+|-------|------|------|------------------|
+| <!-- [UI-SCR-001] --> | Screen | <!-- 說明 --> | <!-- US1 --> |
+| <!-- [UI-PAT-003] --> | Pattern | <!-- 說明 --> | <!-- US2 --> |
+
+---
+
+## 7. Out of Scope
 
 以下項目不在本 Feature 範圍內：
 

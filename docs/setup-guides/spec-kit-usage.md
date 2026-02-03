@@ -131,7 +131,7 @@ npm install -g @anthropic-ai/claude-code
 1. 啟動 VS Code
 2. 開啟你的專案資料夾：
    ```
-   E:\Dropbox\80.Investment Research\88.SKY888回測專案\06.Victor\09.Python\77.TaskScheduler
+   C:\Projects\your-project-name
    ```
 
 ### 步驟 2: 開啟整合終端機
@@ -204,7 +204,7 @@ uv pip freeze > requirements.txt
 
 ```powershell
 # 1. 確保在專案根目錄
-cd "E:\Dropbox\80.Investment Research\88.SKY888回測專案\06.Victor\09.Python\77.TaskScheduler"
+cd "C:\Projects\your-project-name"
 
 # 2. 啟動虛擬環境
 .venv\Scripts\Activate.ps1
