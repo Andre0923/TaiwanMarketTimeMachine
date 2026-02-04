@@ -43,16 +43,16 @@
 > - `.gitignore` 已包含 `.artifacts/` 排除規則
 > - 本階段任務必須在所有 User Story 實作前完成
 
-- [ ] T003 環境設定與依賴安裝
+- [X] T003 環境設定與依賴安裝
   - 執行 `uv add fastapi uvicorn pyodbc pydantic pydantic-settings`
   - 執行 `uv add --dev pytest pytest-asyncio httpx coverage`
   - 確認 `.env` 檔案已存在且配置正確
-- [ ] T004 [P] 建立資料庫連線模組 `src/db/connection.py`
+- [X] T004 [P] 建立資料庫連線模組 `src/db/connection.py`
   - 實作 `get_connection()` 函式（從 `.env` 讀取配置）
   - 使用 ODBC Driver 18 for SQL Server
   - 設定連線池與錯誤處理
   - 撰寫單元測試 `tests/unit/test_db_connection.py`
-- [ ] T005 [P] 建立 FastAPI 主程式 `src/main.py`
+- [X] T005 [P] 建立 FastAPI 主程式 `src/main.py`
   - 初始化 FastAPI App
   - 設定 CORS（若需要）
   - 設定全域錯誤處理
