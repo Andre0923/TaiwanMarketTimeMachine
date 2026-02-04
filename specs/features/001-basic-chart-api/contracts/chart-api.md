@@ -1,548 +1,516 @@
-# API Contract: Chart Data API
+# Chart API 契約文件
 
-> **Feature ID**: 001-basic-chart-api  
-> **API Version**: v1  
-> **Created**: 2026-02-03  
-> **Status**: ✅ Ready for Implementation
-
----
-
-## 1. Overview
-
-本文件定義圖表資料 API 的完整契約，包括 Endpoint、Request/Response 格式、錯誤碼、驗證規則。
-
-**設計原則**：
-- RESTful 風格
-- 統一錯誤格式
-- 向下相容（未來可擴充欄位）
-- 語意化錯誤碼
+> **版本**: v1.0.0  
+> **生效日期**: 2026-02-04  
+> **對應 Feature**: 001-basic-chart-api  
+> **對應 User Story**: US G-2 (API Response 格式設計)
 
 ---
 
-## 2. Base URL
+## 概述
 
-```
-http://localhost:8000/api/v1
-```
-
-**生產環境**（待定）：
-```
-https://api.assrp.example.com/api/v1
-```
+本文件定義台股時光機「日K線圖表 API」的完整契約規範，包括：
+- Request/Response 格式（US G-2 AC1）
+- 擴充性設計原則（US G-2 AC2, AC5）
+- 錯誤格式標準（US G-2 AC3）
+- API 版本管理策略（US G-2 AC4）
 
 ---
 
-## 3. Endpoint: Get Chart Data
+## 1. API 端點規範
 
-### 3.1 基本資訊
+### 1.1 取得日K線資料
 
-```
-GET /api/v1/chart-data
-```
+#### 基本資訊
 
-**用途**：查詢指定股票在特定日期範圍的 OHLCV 資料
+| 項目 | 內容 |
+|------|------|
+| **端點** | `GET /api/chart/daily` |
+| **用途** | 查詢指定股票的日K線資料（從 1分K 聚合） |
+| **認證** | 無（開發階段） |
+| **速率限制** | 無（開發階段） |
 
-**驗證需求**：無（M01 階段無身份驗證）
+#### Request Parameters
 
-### 3.2 Request
-
-#### Query Parameters
-
-| 參數 | 類型 | 必填 | 說明 | 格式 | 範例 |
+| 參數 | 類型 | 必填 | 格式 | 說明 | 範例 |
 |------|------|------|------|------|------|
-| `stock_code` | String | ✅ | 股票代碼 | 台股代碼（4-6 位數字） | `2330` |
-| `start_date` | String | ✅ | 起始日期 | ISO 8601: `YYYY-MM-DD` | `2024-01-01` |
-| `end_date` | String | ✅ | 結束日期 | ISO 8601: `YYYY-MM-DD` | `2024-01-31` |
+| `stock_code` | string | ✅ | 4-10 字元 | 股票代碼 | `2330`, `1101` |
+| `start_date` | string | ✅ | YYYY-MM-DD | 起始日期 | `2024-01-01` |
+| `end_date` | string | ✅ | YYYY-MM-DD | 結束日期 | `2024-01-31` |
 
-#### 範例 Request
+**驗證規則**：
+- `stock_code`: 長度 4-10，允許數字與大寫英文
+- `start_date`, `end_date`: 必須符合 ISO 8601 日期格式（YYYY-MM-DD）
+- 日期範圍：`start_date` ≤ `end_date`
 
-```http
-GET /api/v1/chart-data?stock_code=2330&start_date=2024-01-01&end_date=2024-01-31 HTTP/1.1
-Host: localhost:8000
-Accept: application/json
-```
+#### Response Format (Success)
 
-#### cURL 範例
-
-```bash
-curl -X GET "http://localhost:8000/api/v1/chart-data?stock_code=2330&start_date=2024-01-01&end_date=2024-01-31" \
-  -H "Accept: application/json"
-```
-
-### 3.3 Response
-
-#### Success Response (200 OK)
+**HTTP Status**: `200 OK`
 
 ```json
 {
   "stock_code": "2330",
-  "chart_data": {
-    "dates": [
-      "2024-01-01",
-      "2024-01-02",
-      "2024-01-03"
-    ],
-    "ohlc": [
-      {
-        "open": 580.0,
-        "high": 585.0,
-        "low": 578.0,
-        "close": 583.0,
-        "volume": 12345678
-      },
-      {
-        "open": 583.0,
-        "high": 590.0,
-        "low": 582.0,
-        "close": 588.0,
-        "volume": 15678901
-      },
-      {
-        "open": 588.0,
-        "high": 595.0,
-        "low": 586.0,
-        "close": 592.0,
-        "volume": 13456789
-      }
-    ]
+  "chart_data": [
+    {
+      "time": "2024-01-15",
+      "open": 580.0,
+      "high": 585.0,
+      "low": 578.0,
+      "close": 583.0,
+      "volume": 12345678.0
+    },
+    {
+      "time": "2024-01-16",
+      "open": 583.0,
+      "high": 590.0,
+      "low": 582.0,
+      "close": 588.0,
+      "volume": 13456789.0
+    }
+  ],
+  "metadata": {
+    "stock_code": "2330",
+    "start_date": "2024-01-15",
+    "end_date": "2024-01-16",
+    "data_points": 2
   }
 }
 ```
 
-#### Response Schema
+**欄位說明**：
 
-```typescript
-interface ChartDataResponse {
-  stock_code: string;              // 股票代碼
-  chart_data: {
-    dates: string[];               // 交易日期陣列（ISO 8601）
-    ohlc: OHLCData[];             // OHLC 資料陣列（與 dates 一一對應）
-  };
-}
+| 欄位 | 類型 | 必填 | 說明 |
+|------|------|------|------|
+| `stock_code` | string | ✅ | 股票代碼（與請求參數相同） |
+| `chart_data` | array | ✅ | K線資料陣列（可為空陣列） |
+| `chart_data[].time` | string | ✅ | 交易日期（YYYY-MM-DD） |
+| `chart_data[].open` | number | ✅ | 開盤價（> 0） |
+| `chart_data[].high` | number | ✅ | 最高價（> 0） |
+| `chart_data[].low` | number | ✅ | 最低價（> 0） |
+| `chart_data[].close` | number | ✅ | 收盤價（> 0） |
+| `chart_data[].volume` | number | ✅ | 成交量（≥ 0） |
+| `metadata` | object | 🟡 | 資料 metadata（可為 null） |
+| `metadata.stock_code` | string | ✅ | 股票代碼 |
+| `metadata.start_date` | string | ✅ | 實際資料起始日期 |
+| `metadata.end_date` | string | ✅ | 實際資料結束日期 |
+| `metadata.data_points` | integer | ✅ | 資料點數量 |
 
-interface OHLCData {
-  open: number;                    // 開盤價
-  high: number;                    // 最高價
-  low: number;                     // 最低價
-  close: number;                   // 收盤價
-  volume: number;                  // 成交量（股數）
-}
-```
-
-#### 欄位說明
-
-| 欄位 | 型別 | 必填 | 說明 | 限制 |
-|------|------|------|------|------|
-| `stock_code` | String | ✅ | 股票代碼 | 回應 Request 參數 |
-| `chart_data.dates` | Array[String] | ✅ | 交易日期陣列 | ISO 8601，升序排列 |
-| `chart_data.ohlc` | Array[Object] | ✅ | OHLC 資料陣列 | 長度與 dates 相同 |
-| `ohlc[].open` | Number | ✅ | 開盤價 | >= 0，最多 2 位小數 |
-| `ohlc[].high` | Number | ✅ | 最高價 | >= open, close, low |
-| `ohlc[].low` | Number | ✅ | 最低價 | <= open, close, high |
-| `ohlc[].close` | Number | ✅ | 收盤價 | >= 0，最多 2 位小數 |
-| `ohlc[].volume` | Number | ✅ | 成交量 | >= 0，整數 |
+**資料聚合邏輯** (1分K → 日K):
+- **Open**: FIRST_VALUE(開盤價) 按時間 ASC
+- **High**: MAX(最高價)
+- **Low**: MIN(最低價)
+- **Close**: LAST_VALUE(收盤價) 按時間 DESC
+- **Volume**: SUM(成交量)
 
 ---
 
-## 4. Error Responses
+## 2. 錯誤格式標準（US G-2 AC3）
 
-### 4.1 統一錯誤格式
+### 2.1 統一錯誤結構
+
+所有錯誤回應遵循以下格式：
 
 ```json
 {
-  "error": {
-    "code": "<ERROR_CODE>",
-    "message": "<USER_FRIENDLY_MESSAGE>"
+  "detail": {
+    "error": {
+      "code": "ERROR_CODE",
+      "message": "人類可讀的錯誤訊息",
+      "details": "詳細說明（選填）"
+    }
   }
 }
 ```
 
-### 4.2 錯誤碼定義
+### 2.2 錯誤碼對照表
 
-#### E1: INVALID_STOCK_CODE
+| 錯誤碼 | HTTP Status | 說明 | 觸發情境 |
+|--------|-------------|------|----------|
+| `INVALID_STOCK_CODE` | 400 | 股票代碼格式錯誤 | 長度不符、包含非法字元 |
+| `INVALID_DATE_RANGE` | 400 | 日期範圍無效 | 起始日期 > 結束日期、格式錯誤 |
+| `NO_DATA` | 404 | 查無資料 | 指定日期範圍無任何資料 |
+| `DATABASE_ERROR` | 500 | 資料庫錯誤 | 連線失敗、查詢超時 |
+| `INTERNAL_ERROR` | 500 | 伺服器內部錯誤 | 未預期的系統錯誤 |
 
-**HTTP Status**: `400 Bad Request`
+### 2.3 錯誤回應範例
 
-**觸發條件**：
-- stock_code 參數缺失
-- stock_code 格式不正確（非 4-6 位數字）
-- stock_code 在資料庫中不存在
+#### 範例 1: 日期範圍錯誤（400 Bad Request）
 
-**Response**：
 ```json
 {
-  "error": {
-    "code": "INVALID_STOCK_CODE",
-    "message": "查無此股票代碼，請確認後重試"
+  "detail": {
+    "error": {
+      "code": "INVALID_DATE_RANGE",
+      "message": "參數驗證錯誤",
+      "details": "起始日期 (2024-01-31) 不得大於結束日期 (2024-01-01)"
+    }
   }
 }
 ```
 
-**前端處理**：
-- 顯示錯誤訊息
-- 提供「返回」或「重新輸入」按鈕
+#### 範例 2: 股票代碼格式錯誤（422 Unprocessable Entity）
+
+FastAPI 內建驗證錯誤格式（Pydantic ValidationError）：
+
+```json
+{
+  "detail": [
+    {
+      "type": "string_too_short",
+      "loc": ["query", "stock_code"],
+      "msg": "String should have at least 4 characters",
+      "input": "12"
+    }
+  ]
+}
+```
+
+#### 範例 3: 查無資料（設計選擇：200 + 空陣列）
+
+目前設計：回傳 200 OK + 空 `chart_data` 陣列
+
+```json
+{
+  "stock_code": "9999",
+  "chart_data": [],
+  "metadata": {
+    "stock_code": "9999",
+    "start_date": "2024-01-01",
+    "end_date": "2024-01-31",
+    "data_points": 0
+  }
+}
+```
+
+**設計考量**：
+- ✅ **優點**: 前端可統一處理回應結構，無需區分 200 vs 404
+- 🔴 **替代方案**: 回傳 404 + `NO_DATA` 錯誤碼（需修改 Router 邏輯）
 
 ---
 
-#### E2: INVALID_DATE_RANGE
+## 3. 擴充性設計原則（US G-2 AC2, AC5）
 
-**HTTP Status**: `400 Bad Request`
+### 3.1 向後相容策略
 
-**觸發條件**：
-- start_date 或 end_date 參數缺失
-- 日期格式不正確（非 YYYY-MM-DD）
-- end_date < start_date
-- 日期範圍超過限制（如 > 365 天）
+#### ✅ 允許的變更（不破壞相容性）
 
-**Response**：
-```json
-{
-  "error": {
-    "code": "INVALID_DATE_RANGE",
-    "message": "日期範圍不正確，請調整後重試"
-  }
-}
+1. **新增選填欄位**（`metadata` 新增欄位）
+   ```json
+   {
+     "metadata": {
+       "stock_code": "2330",
+       "start_date": "2024-01-15",
+       "end_date": "2024-01-16",
+       "data_points": 2,
+       "trading_days": 2,          // ✅ 新增：交易日數量
+       "total_volume": 25802467.0  // ✅ 新增：總成交量
+     }
+   }
+   ```
+
+2. **新增選填 Query 參數**
+   ```
+   GET /api/chart/daily?stock_code=2330&start_date=2024-01-01&end_date=2024-01-31&interval=5m
+   ```
+   - `interval` 為選填，預設 `daily`
+   - 舊客戶端不傳此參數仍正常運作
+
+3. **新增 Response 欄位（選填層級）**
+   ```json
+   {
+     "chart_data": [...],
+     "metadata": {...},
+     "indicators": null  // ✅ 新增：技術指標資料（選填）
+   }
+   ```
+
+#### ❌ 禁止的變更（破壞相容性）
+
+1. **刪除必填欄位**
+   ```json
+   // ❌ 移除 stock_code
+   {
+     "chart_data": [...]
+   }
+   ```
+
+2. **修改欄位類型**
+   ```json
+   // ❌ volume 從 number 改為 string
+   {
+     "volume": "12345678"
+   }
+   ```
+
+3. **修改必填參數名稱**
+   ```
+   // ❌ stock_code 改為 symbol
+   GET /api/chart/daily?symbol=2330&start_date=...
+   ```
+
+### 3.2 版本管理策略（US G-2 AC4）
+
+#### 方案 A: URL 版本控制（推薦）
+
+```
+GET /api/v1/chart/daily
+GET /api/v2/chart/daily  // 未來版本
 ```
 
-**前端處理**：
-- 顯示錯誤訊息
-- 標示日期輸入欄位錯誤
-- 提供修正建議（如「結束日期需晚於起始日期」）
+**優點**：
+- 明確的版本邊界
+- 易於路由與維護
+- 支援多版本並存
+
+#### 方案 B: Header 版本控制
+
+```http
+GET /api/chart/daily
+Accept: application/vnd.taiwanmarket.v1+json
+```
+
+**優點**：
+- URL 保持簡潔
+- 符合 REST 最佳實踐
+
+#### 當前實作
+
+- 目前採用**無版本號**（`/api/chart/daily`）
+- 承諾維持向後相容（遵循 3.1 原則）
+- 若需破壞性變更，將遷移至 `/api/v2/chart/daily`
 
 ---
 
-#### E3: NO_DATA
+## 4. API 使用範例
 
-**HTTP Status**: `404 Not Found`
+### 4.1 成功查詢
 
-**觸發條件**：
-- 查詢結果為空（該股票在指定期間無交易資料）
-- 查詢期間為非交易日（週末、國定假日）
+#### curl
 
-**Response**：
-```json
-{
-  "error": {
-    "code": "NO_DATA",
-    "message": "查無資料，請調整查詢條件"
-  }
-}
+```bash
+curl -X GET "http://localhost:8000/api/chart/daily?stock_code=2330&start_date=2024-01-01&end_date=2024-01-31" \
+  -H "Accept: application/json"
 ```
 
-**前端處理**：
-- 顯示「無資料」提示
-- 提供「返回」或「調整條件」按鈕
-- 建議調整日期範圍或更換股票代碼
-
----
-
-#### E4: INTERNAL_ERROR
-
-**HTTP Status**: `500 Internal Server Error`
-
-**觸發條件**：
-- 資料庫連線失敗
-- SQL 查詢異常
-- 伺服器內部錯誤
-
-**Response**：
-```json
-{
-  "error": {
-    "code": "INTERNAL_ERROR",
-    "message": "系統發生錯誤，請聯繫技術支援"
-  }
-}
-```
-
-**前端處理**：
-- 顯示錯誤訊息
-- 提供「重試」按鈕
-- 紀錄錯誤日誌（含時間戳、Request ID）
-- 若持續失敗，提示聯繫技術支援
-
----
-
-## 5. 驗證規則
-
-### 5.1 Request 驗證
-
-#### V1: stock_code 驗證
+#### Python (requests)
 
 ```python
-import re
+import requests
 
-def validate_stock_code(stock_code: str) -> bool:
-    """
-    驗證台股股票代碼
-    - 長度：4-6 位數字
-    - 範例：2330, 00878
-    """
-    if not stock_code:
-        return False
-    if not re.match(r'^\d{4,6}$', stock_code):
-        return False
-    return True
-```
-
-**測試案例**：
-- ✅ Valid: `"2330"`, `"00878"`, `"1234"`
-- ❌ Invalid: `""`, `"ABC"`, `"12"`, `"1234567"`
-
----
-
-#### V2: date_range 驗證
-
-```python
-from datetime import datetime, timedelta
-
-def validate_date_range(start_date: str, end_date: str) -> tuple[bool, str]:
-    """
-    驗證日期範圍
-    - 格式：YYYY-MM-DD
-    - end_date >= start_date
-    - 最大範圍：365 天（可調整）
-    """
-    try:
-        start = datetime.fromisoformat(start_date)
-        end = datetime.fromisoformat(end_date)
-    except ValueError:
-        return False, "日期格式不正確"
-    
-    if end < start:
-        return False, "結束日期需晚於起始日期"
-    
-    if (end - start).days > 365:
-        return False, "日期範圍不得超過 365 天"
-    
-    return True, ""
-```
-
-**測試案例**：
-- ✅ Valid: `start="2024-01-01"`, `end="2024-01-31"`
-- ❌ Invalid: 
-  - `start="2024-01-31"`, `end="2024-01-01"` (end < start)
-  - `start="2024-01-01"`, `end="2025-12-31"` (> 365 days)
-  - `start="2024-13-01"`, `end="2024-01-31"` (invalid month)
-
----
-
-### 5.2 Response 驗證
-
-#### V3: OHLC 資料一致性
-
-```python
-def validate_ohlc_data(ohlc: dict) -> bool:
-    """
-    驗證 OHLC 資料邏輯
-    - high >= open, close, low
-    - low <= open, close, high
-    - 所有價格 >= 0
-    - volume >= 0
-    """
-    if ohlc['high'] < max(ohlc['open'], ohlc['close'], ohlc['low']):
-        return False
-    if ohlc['low'] > min(ohlc['open'], ohlc['close'], ohlc['high']):
-        return False
-    if any(v < 0 for v in [ohlc['open'], ohlc['high'], ohlc['low'], ohlc['close'], ohlc['volume']]):
-        return False
-    return True
-```
-
----
-
-## 6. 效能要求
-
-### 6.1 回應時間目標
-
-| 資料量 | 目標回應時間 | 說明 |
-|--------|-------------|------|
-| 1-100 根 K 線 | < 200ms | 典型查詢（1-3 個月） |
-| 101-365 根 K 線 | < 500ms | 年度查詢 |
-| > 365 根 K 線 | < 1000ms | 長期歷史資料 |
-
-### 6.2 併發支援
-
-- 支援同時 10 個併發請求，平均回應時間 < 300ms
-- 使用連線池（Pool Size: 10, Max Overflow: 20）
-
-### 6.3 快取策略（M01 不實作，預留設計）
-
-- 歷史資料（> 7 天前）可快取 24 小時
-- 近期資料（最近 7 天）不快取（可能更新）
-
----
-
-## 7. 安全性考量
-
-### 7.1 輸入驗證
-
-- 所有參數必須經過嚴格驗證（防止 SQL Injection）
-- 使用參數化查詢（Parameterized Query）
-
-### 7.2 速率限制（M01 不實作，預留設計）
-
-- 每 IP 每分鐘最多 60 個請求
-- 超過限制回傳 `429 Too Many Requests`
-
-### 7.3 CORS 設定
-
-```python
-# FastAPI CORS Middleware
-from fastapi.middleware.cors import CORSMiddleware
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # Vite 開發伺服器
-    allow_credentials=True,
-    allow_methods=["GET"],
-    allow_headers=["*"],
+response = requests.get(
+    "http://localhost:8000/api/chart/daily",
+    params={
+        "stock_code": "2330",
+        "start_date": "2024-01-01",
+        "end_date": "2024-01-31"
+    }
 )
+
+if response.status_code == 200:
+    data = response.json()
+    print(f"股票: {data['stock_code']}")
+    print(f"資料點數: {len(data['chart_data'])}")
+    for point in data['chart_data'][:5]:  # 顯示前 5 筆
+        print(f"{point['time']}: O={point['open']}, C={point['close']}, V={point['volume']}")
+else:
+    error = response.json()
+    print(f"錯誤: {error['detail']['error']['code']}")
+    print(f"訊息: {error['detail']['error']['message']}")
+```
+
+#### JavaScript (fetch)
+
+```javascript
+const fetchChartData = async (stockCode, startDate, endDate) => {
+  const url = new URL('http://localhost:8000/api/chart/daily');
+  url.searchParams.append('stock_code', stockCode);
+  url.searchParams.append('start_date', startDate);
+  url.searchParams.append('end_date', endDate);
+
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(`API Error: ${error.detail.error.code}`);
+    }
+    const data = await response.json();
+    return data.chart_data;
+  } catch (error) {
+    console.error('Failed to fetch chart data:', error);
+    throw error;
+  }
+};
+
+// 使用範例
+fetchChartData('2330', '2024-01-01', '2024-01-31')
+  .then(chartData => console.log('Data points:', chartData.length))
+  .catch(error => console.error(error));
+```
+
+### 4.2 錯誤處理
+
+#### 日期範圍錯誤
+
+```bash
+curl -X GET "http://localhost:8000/api/chart/daily?stock_code=2330&start_date=2024-01-31&end_date=2024-01-01"
+```
+
+**Response (400)**:
+```json
+{
+  "detail": {
+    "error": {
+      "code": "INVALID_DATE_RANGE",
+      "message": "參數驗證錯誤",
+      "details": "起始日期 (2024-01-31) 不得大於結束日期 (2024-01-01)"
+    }
+  }
+}
 ```
 
 ---
 
-## 8. 測試案例
+## 5. 前端整合指引
 
-### 8.1 正常流程測試
+### 5.1 TradingView Lightweight Charts 整合
 
-| 測試案例 | Request | 預期 Status | 預期 Response |
-|----------|---------|------------|--------------|
-| TC-1 | stock_code=2330, 2024-01-01 to 2024-01-31 | 200 | 包含 chart_data |
-| TC-2 | stock_code=00878, 2024-01-01 to 2024-01-10 | 200 | 包含 chart_data |
+API 回應格式**直接相容** TradingView Lightweight Charts：
 
-### 8.2 錯誤處理測試
+```javascript
+import { createChart } from 'lightweight-charts';
 
-| 測試案例 | Request | 預期 Status | 預期 Error Code |
-|----------|---------|------------|-----------------|
-| TC-3 | stock_code=XXXX | 400 | INVALID_STOCK_CODE |
-| TC-4 | start_date=2024-02-01, end_date=2024-01-01 | 400 | INVALID_DATE_RANGE |
-| TC-5 | stock_code=9999 (不存在) | 400 | INVALID_STOCK_CODE |
-| TC-6 | 查詢週末期間 | 404 | NO_DATA |
-| TC-7 | DB 連線失敗 | 500 | INTERNAL_ERROR |
+// 1. 取得 API 資料
+const response = await fetch('/api/chart/daily?stock_code=2330&start_date=2024-01-01&end_date=2024-01-31');
+const data = await response.json();
 
----
+// 2. 建立圖表
+const chart = createChart(document.getElementById('chart'), { width: 600, height: 400 });
+const candlestickSeries = chart.addCandlestickSeries();
 
-## 9. API 文件（OpenAPI Schema）
+// 3. 直接餵入資料（格式相容）
+candlestickSeries.setData(data.chart_data);
 
-### 9.1 OpenAPI 3.0 Spec
+// 4. 建立成交量副圖
+const volumeSeries = chart.addHistogramSeries({
+  color: '#26a69a',
+  priceFormat: { type: 'volume' },
+  priceScaleId: '',
+});
+volumeSeries.setData(
+  data.chart_data.map(d => ({ time: d.time, value: d.volume }))
+);
+```
 
-```yaml
-openapi: 3.0.0
-info:
-  title: ASSRP Chart Data API
-  version: 1.0.0
-  description: 台股視覺化事件研究平台 - 圖表資料 API
+### 5.2 Loading / Empty / Error 狀態處理
 
-paths:
-  /api/v1/chart-data:
-    get:
-      summary: 查詢股票圖表資料
-      parameters:
-        - name: stock_code
-          in: query
-          required: true
-          schema:
-            type: string
-            pattern: '^\d{4,6}$'
-          description: 股票代碼（4-6 位數字）
-        - name: start_date
-          in: query
-          required: true
-          schema:
-            type: string
-            format: date
-          description: 起始日期（YYYY-MM-DD）
-        - name: end_date
-          in: query
-          required: true
-          schema:
-            type: string
-            format: date
-          description: 結束日期（YYYY-MM-DD）
-      responses:
-        '200':
-          description: 成功取得圖表資料
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ChartDataResponse'
-        '400':
-          description: 請求參數錯誤
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
-          description: 查無資料
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: 伺服器錯誤
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+#### Loading State
 
-components:
-  schemas:
-    ChartDataResponse:
-      type: object
-      properties:
-        stock_code:
-          type: string
-        chart_data:
-          type: object
-          properties:
-            dates:
-              type: array
-              items:
-                type: string
-                format: date
-            ohlc:
-              type: array
-              items:
-                $ref: '#/components/schemas/OHLCData'
-    
-    OHLCData:
-      type: object
-      properties:
-        open:
-          type: number
-        high:
-          type: number
-        low:
-          type: number
-        close:
-          type: number
-        volume:
-          type: integer
-    
-    ErrorResponse:
-      type: object
-      properties:
-        error:
-          type: object
-          properties:
-            code:
-              type: string
-              enum: [INVALID_STOCK_CODE, INVALID_DATE_RANGE, NO_DATA, INTERNAL_ERROR]
-            message:
-              type: string
+```javascript
+const [chartData, setChartData] = useState(null);
+const [loading, setLoading] = useState(true);
+
+useEffect(() => {
+  setLoading(true);
+  fetchChartData('2330', '2024-01-01', '2024-01-31')
+    .then(data => setChartData(data))
+    .finally(() => setLoading(false));
+}, []);
+
+if (loading) return <Spinner />;
+```
+
+#### Empty State（無資料）
+
+```javascript
+if (chartData && chartData.chart_data.length === 0) {
+  return <EmptyState message="查無資料，請調整日期範圍或股票代碼" />;
+}
+```
+
+#### Error State
+
+```javascript
+const [error, setError] = useState(null);
+
+fetchChartData(...)
+  .catch(err => {
+    if (err.response?.data?.detail?.error) {
+      const apiError = err.response.data.detail.error;
+      setError(`${apiError.code}: ${apiError.message}`);
+    } else {
+      setError('網路錯誤，請稍後再試');
+    }
+  });
+
+if (error) return <ErrorBanner message={error} />;
 ```
 
 ---
 
-## 10. 變更歷程
+## 6. 測試契約
 
-| 版本 | 日期 | 變更內容 | 作者 |
-|------|------|----------|------|
-| 1.0.0 | 2026-02-03 | 初版建立 | AI Development Team |
+### 6.1 契約測試範圍（US G-2 AC1, AC3）
+
+| 測試類型 | 驗證項目 | 測試檔案 |
+|---------|---------|----------|
+| **Response Schema** | 必要欄位存在、類型正確 | `test_api_contract.py` |
+| **錯誤格式** | 所有錯誤符合統一格式 | `test_api_contract.py` |
+| **資料正確性** | OHLC 邏輯、成交量對齊 | `test_chart_api.py` |
+| **邊界條件** | 空資料、極端日期 | `test_chart_api.py` |
+
+### 6.2 契約測試範例（Pseudocode）
+
+```python
+def test_response_schema_compliance():
+    """驗證 Response 符合定義的 Schema（US G-2 AC1）"""
+    response = client.get("/api/chart/daily", params={...})
+    assert response.status_code == 200
+    
+    data = response.json()
+    # 必要欄位檢查
+    assert "stock_code" in data
+    assert "chart_data" in data
+    assert isinstance(data["chart_data"], list)
+    
+    # 若有資料，檢查 ChartDataPoint 結構
+    if data["chart_data"]:
+        point = data["chart_data"][0]
+        assert all(k in point for k in ["time", "open", "high", "low", "close", "volume"])
+        assert isinstance(point["open"], (int, float))
+        assert point["open"] > 0
+
+def test_error_format_consistency():
+    """驗證所有錯誤符合統一格式（US G-2 AC3）"""
+    # 測試 400 錯誤
+    response = client.get("/api/chart/daily", params={"stock_code": "2330", "start_date": "invalid"})
+    assert response.status_code in [400, 422]
+    
+    # 檢查錯誤結構（若為自定義錯誤）
+    if response.status_code == 400:
+        error = response.json()["detail"]["error"]
+        assert "code" in error
+        assert "message" in error
+```
 
 ---
 
-**文件版本**：v1.0.0  
-**維護者**：AI Development Team  
-**最後更新**：2026-02-03
+## 7. 附錄
+
+### 7.1 相關規格文件
+
+| 文件 | 路徑 | 說明 |
+|------|------|------|
+| Feature Spec | `specs/features/001-basic-chart-api/spec.md` | User Story 完整定義 |
+| Data Model | `specs/features/001-basic-chart-api/data-model.md` | 資料結構與聚合邏輯 |
+| Tasks | `specs/features/001-basic-chart-api/tasks.md` | 實作任務清單 |
+
+### 7.2 變更日誌
+
+| 版本 | 日期 | 變更內容 |
+|------|------|----------|
+| v1.0.0 | 2026-02-04 | 初版：定義日K線 API 契約，建立錯誤格式標準 |
+
+---
+
+**文件維護者**: AI Agent (GitHub Copilot)  
+**最後更新**: 2026-02-04
