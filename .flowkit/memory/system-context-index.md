@@ -1,53 +1,103 @@
-# 📋 Context Index 範本 (Layer 1 - 精簡索引版)
+# System Context Index v1.0.0
 
-> **用途**: 每次 AI 對話自動注入的精簡上下文  
-> **目標篇幅**: 50-150 行（約 250-750 tokens）  
-> **設計理念**: 只放索引，讓 AI 知道去哪裡找更多資訊  
-> **產生指令**: `.flowkit.system-context`
+> **精簡索引版** — 每次 AI 對話自動注入的輕量級上下文  
+> **最後更新**: 2026-02-04 | **完整版**: `.flowkit/memory/system-context.md`
 
 ---
 
-## 範本正文
-
-```markdown
-# Context Index v{VERSION}
-
-> 最後更新: {DATE} | 完整版: `.flowkit/memory/system-context.md`
-
 ## One-liner
-{PROJECT_NAME}: {一句話描述專案本質與核心價值}
 
-## Boundaries (模組邊界，禁止跨越)
-- {module_a}/: {職責} | Owns: {資料/契約} | API: `{path}`
-- {module_b}/: {職責} | Owns: {資料/契約} | API: `{path}`
-- {module_c}/: {職責} | Owns: {資料/契約} | API: `{path}`
-- {module_d}/: {職責} | Owns: {資料/契約} | API: `{path}`
+**TaiwanMarketTimeMachine（台股時光機）** 是一個 **視覺化事件研究與型態標記平台**，以「事件日」為錨點，透過多圖並列與統一時間視窗，即時產出事件後績效統計，加速台股策略研究與驗證。
 
-## Entry Points (開發從這裡開始)
-- CLI: `{path}` - {說明}
-- API: `{path}` - {說明}
-- UI: `{path}` - {說明}
-- Core: `{path}` - {說明}
-- Config: `{path}` - {說明}
+---
 
-## Shared Services (直接使用，勿重複實作)
-- {Service A}: `{path}` → `{使用範例}`
-- {Service B}: `{path}` → `{使用範例}`
-- {Service C}: `{path}` → `{使用範例}`
+## Boundaries（模組邊界，禁止跨越）
 
-## Golden Flows (核心流程路徑追蹤)
-- {Flow 1}: {Layer} → {Layer} → {Layer} → {Layer}
-- {Flow 2}: {Layer} → {Layer} → {Layer}
+- `src/api/`: HTTP 端點定義與請求驗證 | Owns: API 契約、Request/Response 模型 | API: FastAPI Routes
+- `src/services/`: 業務邏輯層（Time Window/Backtest/AI） | Owns: 業務邏輯、計算引擎 | API: Service 方法
+- `src/db/`: 資料庫連線與查詢 | Owns: 連線管理、SQL 查詢 | API: Database Adapter
+- `src/models/`: Pydantic 資料模型 | Owns: DTO、Entity 定義 | API: Python Classes
+- `src/logger.py`: 統一日誌管理 | Owns: Logger 配置 | API: `get_logger()`
 
-## Where-to-Look (遇到問題去哪找)
-- {情境 A} → `{path}` → `{path}`
-- {情境 B} → `{path}` → `{path}`
-- {情境 C} → `{path}` → `{path}`
-- {情境 D} → `{path}`
+---
 
-## NON-NEGOTIABLE (強制規範)
-- {規範 1}: {MUST/NEVER} {具體規範}
-- {規範 2}: {MUST/NEVER} {具體規範}
+## Entry Points（開發從這裡開始）
+
+- **後端主程式**: `src/main.py` - FastAPI 應用程式入口
+- **API 路由**: `src/api/` - HTTP API 端點定義
+- **業務邏輯**: `src/services/` - 核心功能實作
+- **資料層**: `src/db/` - 資料庫連線與查詢
+- **日誌模組**: `src/logger.py` - 統一日誌管理（已實作）
+- **測試入口**: `tests/` - 單元測試與整合測試
+
+---
+
+## Shared Services（直接使用，勿重複實作）
+
+- **Logger**: `src/logger.py` → `from src.logger import get_logger; logger = get_logger(__name__)`
+
+---
+
+## Golden Flows（核心流程路徑追蹤）
+
+- **圖表資料查詢（M01）**: 前端請求 → `/api/v1/chart-data` → ChartDataService → DBAdapter → `[股價即時].[dbo].[1分K]` → 前端渲染
+
+---
+
+## Where-to-Look（遇到問題去哪找）
+
+- **資料庫連線問題** → `.env` → `src/db/`
+- **API 回應格式** → `specs/features/001-basic-chart-api/contracts/` → `src/models/`
+- **日誌記錄問題** → `src/logger.py` → `logs/` → `.env` LOG_LEVEL
+- **測試失敗** → `tests/` → `.artifacts/` → `specs/features/*/spec.md` AC
+- **錯誤碼定義** → `specs/features/001-basic-chart-api/spec.md` Q2
+
+---
+
+## NON-NEGOTIABLE（強制規範）
+
+- **套件管理**: MUST 使用 `uv`，NEVER 使用 pip/conda/poetry
+- **錯誤處理**: MUST 使用標準化錯誤碼 + 詳細日誌（參考 Feature 001 Spec Q2）
+- **日誌**: MUST 使用 `src/logger.py`，NEVER 使用 `print()`
+- **測試**: MUST Test-First 原則，產物輸出至 `.artifacts/`
+- **API 規範**: MUST RESTful 設計，統一 Response 格式
+- **資料庫連線**: MUST 使用 `.env` 配置，NEVER 寫入程式碼
+- **前端快取**: MUST 5 分鐘 TTL，避免過度請求
+- **Loading UX**: MUST 300ms 最小顯示時間，避免閃爍
+
+---
+
+## Known Pitfalls（常見陷阱）
+
+- ❌ 使用 pip/conda 而非 uv
+- ❌ 直接修改 `specs/system/`（需透過 Unify Flow）
+- ❌ 跳過測試直接實作（違反 Test-First）
+- ❌ 日誌使用 `print()` 而非 Logger
+- ❌ 資料表名稱錯誤（應為 `[股價即時].[dbo].[1分K]`）
+- ❌ 忘記更新 spec.md frontmatter 的 `system_context`
+
+---
+
+## Features（功能清單）
+
+| Feature ID | 狀態 | 核心能力 |
+|------------|------|----------|
+| 001-basic-chart-api | 🚧 開發中 | K線圖表、互動操作、API 格式規範 |
+
+---
+
+## Tech Stack（技術棧）
+
+- **後端**: Python 3.12+ / FastAPI / pyodbc / uv
+- **前端**: Vue 3 / TradingView Lightweight Charts
+- **資料庫**: Microsoft SQL Server 2019+
+- **測試**: pytest
+
+---
+
+## Full Context
+
+完整文件：`.flowkit/memory/system-context.md` （363 行）
 - {規範 3}: {MUST/NEVER} {具體規範}
 
 ## Known Pitfalls (常見陷阱)
