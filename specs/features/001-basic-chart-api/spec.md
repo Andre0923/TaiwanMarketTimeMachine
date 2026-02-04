@@ -317,7 +317,7 @@ updated: 2026-02-04
 **決議**：採用標準化錯誤碼 + 詳細日誌策略
 
 **API 規格**：
-- Endpoint: `GET /api/v1/chart-data`
+- Endpoint: `GET /api/chart/daily`
 - Query Parameters:
   - `stock_code` (required): 股票代碼
   - `start_date` (required): 起始日期 (YYYY-MM-DD)
