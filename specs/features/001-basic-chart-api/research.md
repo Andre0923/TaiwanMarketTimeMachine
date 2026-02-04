@@ -15,38 +15,87 @@
 
 ## 2. Research Items
 
-### R1: stock_daily 資料表 Schema（對應 Q1）
+### R1: 1分K 資料表 Schema（對應 Q1）
 
 **研究問題**：確認現有資料表的完整 Schema，包括欄位名稱、型別、索引策略。
 
-**研究結果**：
+**研究結果**：✅ **已確認**（2026-02-04）
 
-**決策**：使用**現有資料來源表的欄位**（User 明確要求）
+**資料來源**：`[股價即時].[dbo].[1分K]`
 
-**狀態**：⚠️ **等待 User 提供** - User 已確認需使用現有表，但尚未提供 CREATE TABLE 語句或欄位列表。
+**確認方式**：
+```sql
+SELECT TOP 5 * FROM [股價即時].[dbo].[1分K]
+```
+
+**實際 Schema**：
+
+| 欄位名稱（中文） | 對應英文 | 資料型別 | 說明 |
+|-----------------|---------|----------|------|
+| 日期 | date | VARCHAR/DATE | 交易日期（格式：YYYY-MM-DD） |
+| 時間 | time | VARCHAR/TIME | 分鐘時間點（格式：HH:MM:SS） |
+| 股票代號 | stock_code | VARCHAR | 股票代碼（如："1101"） |
+| 開盤價 | open_price | FLOAT | 該分鐘開盤價 |
+| 最高價 | high_price | FLOAT | 該分鐘最高價 |
+| 最低價 | low_price | FLOAT | 該分鐘最低價 |
+| 收盤價 | close_price | FLOAT | 該分鐘收盤價 |
+| 成交量 | volume | FLOAT | 該分鐘成交量（單位：股） |
+| 成交金額 | amount | FLOAT | 該分鐘成交金額（新台幣） |
+| 更新時間 | updated_at | DATETIME | 資料更新時間戳記 |
+
+**範例資料（前 5 筆）**：
+```
+日期         時間        股票代號  開盤價    最高價    最低價    收盤價    成交量    成交金額      更新時間
+2022-01-03  09:01:00   1101    48.05    48.15    48.0     48.1     311.0    14944400.0  2023-11-30 20:42:08.753
+2022-01-03  09:01:00   1102    44.4     44.45    44.4     44.45    122.0    5417100.0   2023-11-30 20:42:20.547
+2022-01-03  09:01:00   1103    20.75    20.75    20.75    20.75    1.0      20750.0     2023-11-30 20:42:30.677
+2022-01-03  09:01:00   1104    21.7     21.7     21.7     21.7     19.0     412300.0    2023-11-30 20:42:34.327
+2022-01-03  09:01:00   1108    11.9     11.9     11.9     11.9     7.0      83300.0     2023-11-30 20:42:37.410
+```
+
+**關鍵發現**：
+1. ✅ 欄位名稱為**中文**，需在 Repository 層處理對應
+2. ✅ 資料型別為 FLOAT（非 DECIMAL），需注意精度問題
+3. ✅ 資料格式：日期與時間分開為兩個欄位
+4. ✅ 包含「成交金額」欄位（本 Feature 暫不使用）
+5. ⚠️ 資料最早為 2022-01-03（測試時需注意日期範圍）
+
+**日K聚合策略**（Service 層實作）：
+- **Open（開盤）**：當日第一筆（按 `時間` ASC）的 `開盤價`
+- **High（最高）**：當日所有 `最高價` 的 MAX
+- **Low（最低）**：當日所有 `最低價` 的 MIN
+- **Close（收盤）**：當日最後一筆（按 `時間` DESC）的 `收盤價`
+- **Volume（成交量）**：當日所有 `成交量` 的 SUM
+
+**SQL 查詢範例**（Repository 層）：
+```sql
+SELECT 
+    [日期],
+    [股票代號],
+    (SELECT TOP 1 [開盤價] 
+     FROM [股價即時].[dbo].[1分K] AS inner_t
+     WHERE inner_t.[日期] = outer_t.[日期] 
+       AND inner_t.[股票代號] = outer_t.[股票代號]
+     ORDER BY [時間] ASC) AS [開盤價],
+    MAX([最高價]) AS [最高價],
+    MIN([最低價]) AS [最低價],
+    (SELECT TOP 1 [收盤價] 
+     FROM [股價即時].[dbo].[1分K] AS inner_t
+     WHERE inner_t.[日期] = outer_t.[日期] 
+       AND inner_t.[股票代號] = outer_t.[股票代號]
+     ORDER BY [時間] DESC) AS [收盤價],
+    SUM([成交量]) AS [成交量]
+FROM [股價即時].[dbo].[1分K] AS outer_t
+WHERE [股票代號] = :stock_code
+  AND [日期] BETWEEN :start_date AND :end_date
+GROUP BY [日期], [股票代號]
+ORDER BY [日期] ASC
+```
 
 **後續行動**：
-1. 等待 User 提供以下任一資訊：
-   - SSMS 查詢結果（`INFORMATION_SCHEMA.COLUMNS`）
-   - 直接列出欄位清單
-   - CREATE TABLE 語句
-2. 收到資訊後，更新本文件並同步至 `data-model.md`
-
-**替代方案**（若短期無法取得）：
-```sql
--- 使用推測 Schema 進行開發，標註為待驗證
-CREATE TABLE stock_daily (
-    stock_code VARCHAR(10) NOT NULL,
-    trade_date DATE NOT NULL,
-    open_price DECIMAL(10,2) NOT NULL,
-    high_price DECIMAL(10,2) NOT NULL,
-    low_price DECIMAL(10,2) NOT NULL,
-    close_price DECIMAL(10,2) NOT NULL,
-    volume BIGINT NOT NULL,
-    PRIMARY KEY (stock_code, trade_date),
-    INDEX idx_trade_date (trade_date)
-);
-```
+1. ✅ 已更新 `data-model.md`
+2. ✅ 已記錄至 `research.md`
+3. ⏭️ 進入 Phase 1 實作階段
 
 ---
 

@@ -1,9 +1,10 @@
 # Data Model: 基礎繪圖與 API 格式
 
 > **Feature ID**: 001-basic-chart-api  
-> **Version**: 1.0  
+> **Version**: 1.1  
 > **Created**: 2026-02-03  
-> **Status**: ⚠️ **Pending Confirmation** - Q1 等待 User 提供現有表 Schema
+> **Updated**: 2026-02-04  
+> **Status**: ✅ **Confirmed** - Schema 已驗證（2026-02-04）
 
 ---
 
@@ -11,45 +12,64 @@
 
 本文件定義 M01 Feature 所需的資料模型。主要涉及股票歷史 OHLCV 資料的儲存與查詢。
 
+**資料來源**：`[股價即時].[dbo].[1分K]` - 1分鐘K線原始資料，需聚合為日K。
+
 ---
 
-## 2. Entity: stock_daily
+## 2. Entity: 1分K（Source Table）
 
 ### 2.1 用途
 
-儲存台股歷史日 K 線資料（Open, High, Low, Close, Volume）。
+儲存台股 1 分鐘 K 線資料（Open, High, Low, Close, Volume）。本 Feature 需將此表資料聚合為日 K 線。
 
-### 2.2 Schema
+### 2.2 實際 Schema（已確認）
 
-⚠️ **狀態**：等待 User 確認現有資料表 Schema
-
-**推測 Schema**（基於 PRD，待驗證）：
-
+**資料庫**：`[股價即時]`  
+**表名**：`[dbo].[1分K]`  
+**確認日期**：2026-02-04  
+**查詢範例**：
 ```sql
-CREATE TABLE stock_daily (
-    stock_code VARCHAR(10) NOT NULL COMMENT '股票代碼（如 2330）',
-    trade_date DATE NOT NULL COMMENT '交易日期',
-    open_price DECIMAL(10,2) NOT NULL COMMENT '開盤價',
-    high_price DECIMAL(10,2) NOT NULL COMMENT '最高價',
-    low_price DECIMAL(10,2) NOT NULL COMMENT '最低價',
-    close_price DECIMAL(10,2) NOT NULL COMMENT '收盤價',
-    volume BIGINT NOT NULL COMMENT '成交量（股數）',
-    PRIMARY KEY (stock_code, trade_date),
-    INDEX idx_trade_date (trade_date)
-);
+SELECT TOP 5 * FROM [股價即時].[dbo].[1分K]
 ```
 
-### 2.3 欄位說明
+**實際結構**：
 
-| 欄位名稱 | 資料型別 | 必填 | 說明 | 範例 |
-|----------|----------|------|------|------|
-| `stock_code` | VARCHAR(10) | ✅ | 股票代碼，符合台股格式 | "2330" |
-| `trade_date` | DATE | ✅ | 交易日期（YYYY-MM-DD） | 2024-01-15 |
-| `open_price` | DECIMAL(10,2) | ✅ | 開盤價（新台幣） | 580.00 |
-| `high_price` | DECIMAL(10,2) | ✅ | 當日最高價 | 585.00 |
-| `low_price` | DECIMAL(10,2) | ✅ | 當日最低價 | 578.00 |
-| `close_price` | DECIMAL(10,2) | ✅ | 收盤價 | 583.00 |
-| `volume` | BIGINT | ✅ | 成交量（股數） | 12345678 |
+| 欄位名稱 | 資料型別 | 必填 | 說明 | 範例值 |
+|----------|----------|------|------|--------|
+| `日期` | VARCHAR/DATE | ✅ | 交易日期 | "2022-01-03" |
+| `時間` | VARCHAR/TIME | ✅ | 分鐘時間點 | "09:01:00" |
+| `股票代號` | VARCHAR | ✅ | 股票代碼 | "1101" |
+| `開盤價` | FLOAT | ✅ | 開盤價 | 48.05 |
+| `最高價` | FLOAT | ✅ | 最高價 | 48.15 |
+| `最低價` | FLOAT | ✅ | 最低價 | 48.0 |
+| `收盤價` | FLOAT | ✅ | 收盤價 | 48.1 |
+| `成交量` | FLOAT | ✅ | 成交量（單位：股） | 311.0 |
+| `成交金額` | FLOAT | ✅ | 成交金額（新台幣） | 14944400.0 |
+| `更新時間` | DATETIME | ✅ | 資料更新時間戳記 | "2023-11-30 20:42:08.753" |
+
+**範例資料**（前 5 筆）：
+```
+日期         時間        股票代號  開盤價    最高價    最低價    收盤價    成交量    成交金額      更新時間
+2022-01-03  09:01:00   1101    48.05    48.15    48.0     48.1     311.0    14944400.0  2023-11-30 20:42:08.753
+2022-01-03  09:01:00   1102    44.4     44.45    44.4     44.45    122.0    5417100.0   2023-11-30 20:42:20.547
+2022-01-03  09:01:00   1103    20.75    20.75    20.75    20.75    1.0      20750.0     2023-11-30 20:42:30.677
+2022-01-03  09:01:00   1104    21.7     21.7     21.7     21.7     19.0     412300.0    2023-11-30 20:42:34.327
+2022-01-03  09:01:00   1108    11.9     11.9     11.9     11.9     7.0      83300.0     2023-11-30 20:42:37.410
+```
+
+### 2.3 欄位對應（1分K → 日K 聚合邏輯）
+
+**Service 層需實作的聚合規則**：
+
+| 日K欄位 | 來源 | 聚合方式 |
+|---------|------|----------|
+| `trade_date` | `日期` | GROUP BY `日期`, `股票代號` |
+| `stock_code` | `股票代號` | GROUP BY |
+| `open_price` | `開盤價` | FIRST_VALUE (按 `時間` 排序) |
+| `high_price` | `最高價` | MAX(`最高價`) |
+| `low_price` | `最低價` | MIN(`最低價`) |
+| `close_price` | `收盤價` | LAST_VALUE (按 `時間` 排序) |
+| `volume` | `成交量` | SUM(`成交量`) |
 
 ### 2.4 索引策略
 
