@@ -10,12 +10,13 @@
 
 | Milestone | 名稱 | US 數量 | 狀態 | 預計完成 |
 |-----------|------|---------|------|----------|
-| [M01](M01-basic-chart-and-api.md) | 基礎繪圖與 API 格式 | 5 | ⏳ 規劃中 | — |
-| M02 | Strategy Grid 核心 | 8 | 🔘 尚未規劃 | — |
-| M03 | 事件研究統計 | 7 | 🔘 尚未規劃 | — |
-| M04 | AI 協作增強 | 2 | 🔘 尚未規劃 | — |
+| [M01](M01-basic-chart-and-api.md) | 基礎繪圖與 API 格式 | 2 | ✅ 已完成 | 2026-02-04 |
+| [M02](M02-frontend-chart-interactions.md) | 前端圖表互動功能 | 3 | ⏳ 規劃中 | — |
+| M03 | Strategy Grid 核心 | 8 | 🔘 尚未規劃 | — |
+| M04 | 事件研究統計 | 7 | 🔘 尚未規劃 | — |
+| M05 | AI 協作增強 | 2 | 🔘 尚未規劃 | — |
 
-**總計**：4 個 Milestone，22 個 User Stories
+**總計**：5 個 Milestone，22 個 User Stories
 
 ---
 
@@ -32,21 +33,43 @@
 
 ## 🎯 Milestone 詳細內容
 
-### M01 — 基礎繪圖與 API 格式 ⏳
+### M01 — 基礎繪圖與 API 格式 ✅
 
-**目標**：建立圖表渲染基礎能力與 API 規範
+**目標**：建立圖表資料查詢 API 與後端基礎能力
 
 **包含的 User Stories**：
-- US A-1: K 線與成交量基礎繪圖
+- US A-1: K 線與成交量基礎繪圖（Backend API）
+- US G-2: API Response 固定格式設計
+
+**完成日期**：2026-02-04
+
+**交付產物**：
+- Backend API (`GET /api/chart/daily`)
+- 資料模型定義（ChartDataPoint, ChartResponse, ChartMetadata, ErrorResponse）
+- 錯誤碼規範（6 項標準錯誤碼）
+- 日 K 線聚合演算法
+- 61 個測試案例（覆蓋率 89%）
+
+---
+
+### M02 — 前端圖表互動功能 ⏳
+
+**目標**：實作 Vue 3 前端，提供完整的圖表互動能力
+
+**包含的 User Stories**：
 - US A-2: 圖表互動操作（Zoom/Pan/Crosshair）
 - US A-3: 小圖點擊放大檢視
 - US A-4: 圖表載入狀態與錯誤處理
-- US G-2: API Response 固定格式設計
 
 **為什麼是這些 US？**
-- 基礎圖表是所有功能的前提
-- API 格式需在開發初期確立，確保向下相容
-- 無外部依賴，可立即開始開發
+- 完成 M01 後的自然延續（前端實作）
+- 基礎互動功能是後續 Grid 模式的前提
+- 使用 TradingView Lightweight Charts 整合
+
+**技術範疇**：
+- Vue 3 + TypeScript + Vite
+- TradingView Lightweight Charts v4.1
+- API 整合（使用 M01 Backend）
 
 **下一步**：執行 `/flowkit.Milestone-context` 從 PRD 擷取設計上下文
 

@@ -29,10 +29,10 @@
 
 | US ID | 摘要 | Group | 狀態 |
 |-------|------|-------|------|
-| US A-1 | K 線與成交量基礎繪圖 | A | 🧩 M01 執行中 |
-| US A-2 | 圖表互動操作（Zoom/Pan/Crosshair） | A | 🧩 M01 執行中 |
-| US A-3 | 小圖點擊放大檢視 | A | 🧩 M01 執行中 |
-| US A-4 | 圖表載入狀態與錯誤處理 | A | 🧩 M01 執行中 |
+| US A-1 | K 線與成交量基礎繪圖 | A | ✅ M01 已完成 |
+| US A-2 | 圖表互動操作（Zoom/Pan/Crosshair） | A | 🧩 M02 執行中 |
+| US A-3 | 小圖點擊放大檢視 | A | 🧩 M02 執行中 |
+| US A-4 | 圖表載入狀態與錯誤處理 | A | 🧩 M02 執行中 |
 | US B-1 | 結構化條件查詢 | B | ⏳ 尚未規劃 |
 | US B-2 | Grid 多圖並列顯示 | B | ⏳ 尚未規劃 |
 | US B-3 | 事件日置中對齊 | B | ⏳ 尚未規劃 |
@@ -56,28 +56,37 @@
 
 ## 📊 狀態快照（Status Snapshot）
 
-> **更新時間**：2026-02-03
+> **更新時間**：2026-02-04
 
 ### 狀態統計
 
 | 狀態 | 圖示 | 數量 | 百分比 |
 |------|------|------|--------|
 | 尚未規劃 | ⏳ | 17 | 77% |
-| Milestone 執行中 | 🧩 | 5 | 23% |
+| Milestone 執行中 | 🧩 | 3 | 14% |
 | 部分完成 | 🔶 | 0 | 0% |
-| 已完成 | ✅ | 0 | 0% |
+| 已完成 | ✅ | 2 | 9% |
 
 ---
 
 ### 依狀態分類
 
-#### 🧩 Milestone 執行中（5 個）
+#### ✅ 已完成（2 個）
 
 **Group A — 基礎繪圖與互動**（Milestone M01）
-- US A-1, US A-2, US A-3, US A-4
+- US A-1（K 線與成交量基礎繪圖 - Backend）
 
 **Group G — 效能與快取機制**（Milestone M01）
-- US G-2
+- US G-2（API Response 格式設計）
+
+---
+
+#### 🧩 Milestone 執行中（3 個）
+
+**Group A — 基礎繪圖與互動**（Milestone M02）
+- US A-2（圖表互動操作）
+- US A-3（小圖點擊放大檢視）
+- US A-4（圖表載入狀態與錯誤處理）
 
 #### ⏳ 尚未規劃（17 個）
 
@@ -103,16 +112,19 @@
 
 ## 🎯 Milestone 追蹤
 
-### 已規劃的 Milestone
+### 已完成的 Milestone
 
-**[M01 — 基礎繪圖與 API 格式](../Milestone/M01-basic-chart-and-api.md)** ⏳ 規劃中
-- 包含：US A-1, A-2, A-3, A-4, G-2
-- 狀態：已建立，尚未開始開發
-- 下一步：執行 `/flowkit.Milestone-context` 從 PRD 擷取設計上下文
+**[M01 — 基礎繪圖與 API 格式](../Milestone/M01-basic-chart-and-api.md)** ✅ 已完成
+- 包含：US A-1, G-2
+- 完成日期：2026-02-04
+- 交付：Backend API + 資料模型 + 錯誤碼規範 + 61 個測試（89% 覆蓋率）
 
 ### 進行中的 Milestone
 
-（尚無）
+**[M02 — 前端圖表互動功能](../Milestone/M02-frontend-chart-interactions.md)** ⏳ 規劃中
+- 包含：US A-2, A-3, A-4
+- 狀態：已建立規劃，尚未開始開發
+- 下一步：執行 `speckit.specify` 建立 Feature Spec
 
 ### 規劃建議
 
