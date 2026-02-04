@@ -75,29 +75,29 @@
 > - 單元測試：日K聚合邏輯驗證（1分K → 日K OHLC）
 > - E2E 測試（選擇性）：前端圖表正確顯示紅漲綠跌
 
-- [ ] T006 [P] [US-A1] 建立 Repository 層 `src/db/stock_repository.py`
-  - 實作 `get_one_minute_klines(stock_code, start_date, end_date)` 方法
-  - 使用參數化查詢防止 SQL Injection
-  - 實作連線錯誤處理與重試機制（最多 3 次,間隔 1 秒）
-  - 撰寫單元測試 `tests/unit/test_stock_repository.py`（Mock DB 連線）
-- [ ] T007 [P] [US-A1] 建立 Pydantic 模型 `src/models/chart.py`
-  - 實作 `ChartDataPoint` Model（日期、OHLC、成交量）
-  - 實作 `ChartRequest` Model（股票代碼、起始日期、結束日期）
-  - 實作 `ChartResponse` Model（包含 data 陣列與 metadata）
-- [ ] T008 [US-A1] 建立 Service 層 `src/services/chart_service.py`
-  - 實作 `get_daily_chart(stock_code, start_date, end_date)` 方法
-  - 實作日K聚合邏輯（1分K → 日K OHLC）
-  - 實作資料驗證（日期範圍、股票代碼格式）
-  - 實作無資料處理（對應 AC3）
-  - 撰寫單元測試 `tests/unit/test_chart_service.py`
-- [ ] T009 [P] [US-A1] 建立 API Router `src/api/routes/chart.py`
-  - 實作 `GET /api/chart/daily` 端點
-  - 實作查詢參數驗證（stock_code, start_date, end_date）
-  - 實作 Logging（記錄請求、回應時間、錯誤）
-  - 註冊 Router 至 `src/main.py`
-- [ ] T010 [US-A1] 整合測試
-  - 撰寫 `tests/integration/test_chart_api.py`
-  - 測試 US A-1 AC1: K線資料正常回應
+- [X] T006 [P] [US-A1] 建立 Repository 層 `src/db/stock_repository.py`
+  - ✅ 實作 `get_one_minute_klines(stock_code, start_date, end_date)` 方法
+  - ✅ 使用參數化查詢防止 SQL Injection
+  - ✅ 實作連線錯誤處理與重試機制（最多 3 次,間隔 1 秒）
+  - ✅ 撰寫單元測試 `tests/unit/test_stock_repository.py`（Mock DB 連線）
+- [X] T007 [P] [US-A1] 建立 Pydantic 模型 `src/models/chart.py`
+  - ✅ 實作 `ChartDataPoint` Model（日期、OHLC、成交量）
+  - ✅ 實作 `ChartRequest` Model（股票代碼、起始日期、結束日期）
+  - ✅ 實作 `ChartResponse` Model（包含 data 陣列與 metadata）
+- [X] T008 [US-A1] 建立 Service 層 `src/services/chart_service.py`
+  - ✅ 實作 `get_daily_chart(stock_code, start_date, end_date)` 方法
+  - ✅ 實作日K聚合邏輯（1分K → 日K OHLC）
+  - ✅ 實作資料驗證（日期範圍、股票代碼格式）
+  - ✅ 實作無資料處理（對應 AC3）
+  - ✅ 撰寫單元測試 `tests/unit/test_chart_service.py`
+- [X] T009 [P] [US-A1] 建立 API Router `src/api/routes/chart.py`
+  - ✅ 實作 `GET /api/chart/daily` 端點
+  - ✅ 實作查詢參數驗證（stock_code, start_date, end_date）
+  - ✅ 實作 Logging（記錄請求、回應時間、錯誤）
+  - ✅ 註冊 Router 至 `src/main.py`
+- [X] T010 [US-A1] 整合測試
+  - ✅ 撰寫 `tests/integration/test_chart_api.py`
+  - ✅ 測試 US A-1 AC1: K線資料正常回應
   - 測試 US A-1 AC2: 成交量資料對齊
   - 測試 US A-1 AC3: 無資料時回傳適當回應
 

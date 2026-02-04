@@ -16,6 +16,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from src.logger import setup_logger
+from src.api.routes import chart
 
 logger = setup_logger(__name__)
 
@@ -36,6 +37,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# 註冊 API 路由
+app.include_router(chart.router)
 
 
 @app.exception_handler(Exception)
