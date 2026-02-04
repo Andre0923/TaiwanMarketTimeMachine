@@ -2,7 +2,7 @@
 milestone: M01
 system_context: false
 created: 2026-02-03
-updated: 2026-02-03
+updated: 2026-02-04
 ---
 
 # Feature Specification: 基礎繪圖與 API 格式
@@ -10,6 +10,18 @@ updated: 2026-02-03
 > **Feature ID**: 001-basic-chart-api  
 > **Status**: Draft  
 > **Milestone**: M01 — 基礎繪圖與 API 格式
+
+---
+
+## Clarifications
+
+### Session 2026-02-04
+
+- Q: 實際使用的資料表欄位結構 → A: 使用現有 `[股價即時].[dbo].[1分K]` 表結構，需查詢確認欄位名稱
+- Q: K線時間粒度需求 → A: 聚合成日 K 線（從 `1分K` 計算 OHLC）
+- Q: API 錯誤處理策略層級 → A: 標準化錯誤碼 + 詳細日誌（依 Spec Q2 建議）
+- Q: Loading 狀態最小可見時間 → A: 300ms 最小顯示時間（避免閃爍）
+- Q: 圖表資料快取策略 → A: 前端快取 5 分鐘（降低 API 負載）
 
 ---
 
@@ -31,7 +43,7 @@ updated: 2026-02-03
 **影響範圍**：
 - 前端：Vue 3 + TradingView Lightweight Charts
 - 後端：FastAPI + MSSQL
-- 資料庫：stock_daily 表
+- 資料庫：`[股價即時].[dbo].[1分K]` 表（需聚合為日 K 線）
 
 ### 1.2 Goal
 
@@ -216,9 +228,9 @@ updated: 2026-02-03
 
 ### 3.1 資料來源假設
 
-- **假設**：`stock_daily` 表已存在且包含至少一檔股票的歷史資料（如 2330）
-- **驗證方式**：在開發環境執行 `SELECT * FROM stock_daily WHERE stock_code = '2330' LIMIT 10`
-- **若假設不成立**：需先建立資料匯入機制或使用測試資料
+- **已確認**：使用 `[股價即時].[dbo].[1分K]` 表作為資料來源
+- **驗證方式**：查詢表結構確認欄位名稱對應（股票代碼、時間、OHLCV）
+- **資料處理**：後端需將 1 分鐘 K 線聚合為日 K 線（以交易日為單位計算 OHLC）
 
 ### 3.2 技術棧假設
 
@@ -286,82 +298,65 @@ updated: 2026-02-03
 
 > 需在實作前確認的問題。
 
-### Q1: stock_daily 表的完整 Schema
+### Q1: 資料表欄位結構 ✅ 已釐清
 
-**問題**：欄位名稱、型別、索引策略尚未明確定義
+**決議**：使用現有 `[股價即時].[dbo].[1分K]` 表
 
-**建議方案**：
-```sql
-CREATE TABLE stock_daily (
-    stock_code VARCHAR(10) NOT NULL,
-    trade_date DATE NOT NULL,
-    open_price DECIMAL(10,2) NOT NULL,
-    high_price DECIMAL(10,2) NOT NULL,
-    low_price DECIMAL(10,2) NOT NULL,
-    close_price DECIMAL(10,2) NOT NULL,
-    volume BIGINT NOT NULL,
-    PRIMARY KEY (stock_code, trade_date),
-    INDEX idx_trade_date (trade_date)
-);
-```
-
-**決策者**：Tech Lead  
-**期限**：開發前
+**後續動作**：
+1. 查詢表結構確認實際欄位名稱
+   ```sql
+   SELECT TOP 5 * FROM [股價即時].[dbo].[1分K]
+   ```
+2. 建立欄位對應文件（`data-model.md`）
+3. 實作日 K 線聚合邏輯（以交易日為分組，計算 Open/High/Low/Close/Volume）
 
 ---
 
-### Q2: API Endpoint 設計
+### Q2: API Endpoint 設計 ✅ 已釐清
 
-**問題**：完整的 Endpoint 路徑、Query Parameters、錯誤碼尚未定義
+**決議**：採用標準化錯誤碼 + 詳細日誌策略
 
-**建議方案**：
+**API 規格**：
 - Endpoint: `GET /api/v1/chart-data`
 - Query Parameters:
   - `stock_code` (required): 股票代碼
   - `start_date` (required): 起始日期 (YYYY-MM-DD)
   - `end_date` (required): 結束日期 (YYYY-MM-DD)
-- 錯誤碼:
+- 錯誤回應格式:
+  ```json
+  {
+    "error": {
+      "code": "INVALID_STOCK_CODE",
+      "message": "股票代碼不存在",
+      "details": "Stock code '9999' not found in database"
+    }
+  }
+  ```
+- 錯誤碼定義:
   - `INVALID_STOCK_CODE`: 股票代碼不存在
   - `INVALID_DATE_RANGE`: 日期範圍不合法
   - `NO_DATA`: 查詢結果為空
   - `INTERNAL_ERROR`: 伺服器錯誤
-
-**決策者**：Tech Lead  
-**期限**：開發前
+- 日誌策略：所有錯誤 MUST 記錄到 `logs/` 目錄，包含 request_id、錯誤堆疊、查詢參數
 
 ---
 
-### Q3: Loading Spinner 樣式
+### Q3: Loading Spinner 樣式 ✅ 已釐清
 
-**問題**：使用哪種動畫？顏色與尺寸？
+**決議**：採用 300ms 最小顯示時間策略
 
-**建議方案**：
+**UI 規格**：
 - 動畫：Circular Spinner（圓形旋轉）
 - 顏色：Primary Color (#1976d2)
 - 尺寸：40x40px
 - 文案：「載入中...」
-
-**決策者**：UI/UX Designer  
-**期限**：開發前
-
----
-
-### Q4: 錯誤訊息文案
-
-**問題**：不同錯誤類型的具體文案尚未定義
-
-**建議方案**：
-- 網路錯誤：「無法連線至伺服器，請檢查網路連線後重試」
-- 逾時錯誤：「請求逾時，請稍後再試」
-- 資料不存在：「查無資料，請調整查詢條件」
-- 伺服器錯誤：「系統發生錯誤，請聯繫技術支援」
-
-**決策者**：Product Manager  
-**期限**：開發前
+- **最小可見時間**：300ms（避免閃爍效應）
+  - 若 API 回應時間 < 300ms，Loading 仍顯示至 300ms
+  - 若 API 回應時間 ≥ 300ms，API 回應後立即隱藏
 
 ---
 
-### Q5: 小圖放大動畫
+### Q4: 小圖放大動畫
 
 **問題**：是否需要過場動畫？動畫時長？
 
@@ -397,6 +392,26 @@ const candlestickSeries = chart.addCandlestickSeries({
 ```
 
 ### 7.2 效能考量
+
+**日 K 線聚合策略**：
+- 資料來源：`[股價即時].[dbo].[1分K]`（1 分鐘 K 線）
+- 聚合邏輯：
+  - Open：當日第一根 1 分 K 的 Open
+  - High：當日所有 1 分 K 的最高 High
+  - Low：當日所有 1 分 K 的最低 Low
+  - Close：當日最後一根 1 分 K 的 Close
+  - Volume：當日所有 1 分 K 的 Volume 總和
+- 實作位置：後端 Service 層（避免前端重複計算）
+
+**快取策略**：
+- **前端快取**：5 分鐘 TTL（降低 API 負載）
+- 快取鍵：`chart_data:{stock_code}:{start_date}:{end_date}`
+- 實作方式：瀏覽器 Memory Cache（localStorage 可選）
+- M01 階段不實作後端快取（避免增加基礎設施複雜度）
+
+**Loading 狀態管理**：
+- 最小可見時間：300ms（避免閃爍效應）
+- 實作方式：前端 `setTimeout` 延遲隱藏
 
 **Grid 模式渲染效能**：
 - 需考慮大量小圖（20+）的渲染效能

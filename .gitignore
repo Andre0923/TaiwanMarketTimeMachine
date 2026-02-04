@@ -26,6 +26,9 @@ venv/
 ENV/
 env/
 
+# 環境變數（敏感資訊）
+.env
+
 # 日誌
 logs/
 *.log
