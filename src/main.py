@@ -117,11 +117,6 @@ async def root():
     }
 
 
-# TODO: Phase 2 將註冊 chart router
-# from src.api.routes import chart
-# app.include_router(chart.router, prefix="/api", tags=["Chart"])
-
-
 if __name__ == "__main__":
     import uvicorn
 

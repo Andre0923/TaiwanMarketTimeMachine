@@ -1,20 +1,23 @@
-# Quick Start Guide: 基礎繪圖與 API 格式
+# Quick Start Guide: 基礎繪圖與 API 格式（M01）
 
 > **Feature ID**: 001-basic-chart-api  
-> **Target Audience**: 開發者、QA、DevOps  
-> **Estimated Time**: 30 分鐘
+> **Target Audience**: 開發者、QA  
+> **Estimated Time**: 20 分鐘  
+> **實作狀態**: ✅ 後端完成 | 🚧 前端延後至 M02
 
 ---
 
 ## 1. Overview
 
-本指南協助您快速建立 M01 Feature 的開發環境，包括前後端專案初始化、資料庫連線設定、執行測試。
+本指南協助您快速建立 M01 Feature 的開發環境，並測試後端 API 功能。
 
 **完成後您將能夠**：
 - ✅ 執行後端 API 伺服器（FastAPI）
-- ✅ 執行前端開發伺服器（Vue 3 + Vite）
-- ✅ 測試圖表資料 API
-- ✅ 執行單元測試與整合測試
+- ✅ 測試日K線圖表資料 API
+- ✅ 執行完整測試套件（61 個測試）
+- ✅ 查看 API 文件與契約
+
+**前端開發**：前端互動介面（Vue 3 + TradingView Charts）延後至 M02 實作。
 
 ---
 
@@ -24,10 +27,8 @@
 
 | 項目 | 版本 | 安裝驗證指令 |
 |------|------|--------------|
-| **Python** | 3.11+ | `python --version` |
+| **Python** | 3.14+ | `python --version` |
 | **uv** | latest | `uv --version` |
-| **Node.js** | 18+ | `node --version` |
-| **npm** | 9+ | `npm --version` |
 | **Microsoft SQL Server** | 2019+ | `sqlcmd -?` (可選) |
 | **Git** | 2.0+ | `git --version` |
 
@@ -39,412 +40,388 @@
 # 安裝 uv（Python 環境管理）
 powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
 
-# 安裝 Node.js（前端開發）
-# 下載：https://nodejs.org/
-
 # 驗證安裝
 uv --version
-node --version
-npm --version
-```
-
-#### macOS / Linux
-
-```bash
-# 安裝 uv
-curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# 安裝 Node.js（使用 nvm）
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
-nvm install 18
-nvm use 18
-
-# 驗證安裝
-uv --version
-node --version
-npm --version
+python --version
 ```
 
 ---
 
-## 3. 專案結構初始化
+## 3. 環境設定
 
 ### 3.1 Clone 專案
 
-```bash
-cd c:\程式開發\TaiwanMarketTimeMachine
+```powershell
+git clone https://github.com/Andre0923/TaiwanMarketTimeMachine.git
+cd TaiwanMarketTimeMachine
+
+# 切換至開發分支
 git checkout 1-basic-chart-api
-git pull origin 1-basic-chart-api
 ```
 
-### 3.2 預期目錄結構
+### 3.2 安裝 Python 依賴
 
-執行後端前端初始化後，專案結構如下：
+```powershell
+# 建立虛擬環境並安裝所有依賴
+uv sync
 
+# 驗證安裝
+uv run python -c "import fastapi; print(f'FastAPI {fastapi.__version__}')"
 ```
-TaiwanMarketTimeMachine/
-├── backend/                  # FastAPI 後端
-│   ├── main.py              # 應用進入點
-│   ├── api/
-│   │   └── v1/
-│   │       └── chart.py     # 圖表 API Endpoint
-│   ├── models/
-│   │   └── chart.py         # 資料模型
-│   ├── services/
-│   │   └── chart_service.py # 業務邏輯
-│   ├── database.py          # MSSQL 連線
-│   ├── pyproject.toml       # Python 依賴
-│   └── uv.lock              # 鎖定檔
-├── frontend/                # Vue 3 前端
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── Chart.vue
-│   │   │   └── ChartGrid.vue
-│   │   ├── services/
-│   │   │   └── chartApi.ts
-│   │   └── types/
-│   │       └── chart.ts
-│   ├── package.json
-│   └── vite.config.ts
-├── tests/                   # 測試
-│   ├── test_chart_api.py    # 後端測試
-│   └── test_chart_component.spec.ts
-├── specs/
-│   └── features/
-│       └── 001-basic-chart-api/
-│           ├── spec.md
-│           ├── plan.md
-│           ├── data-model.md
-│           └── contracts/
-└── logs/                    # 日誌（自動建立）
+
+**預期輸出**：`FastAPI 0.128.x`
+
+### 3.3 資料庫連線設定
+
+建立 `.env` 檔案（複製 `.env.example`）：
+
+```bash
+# Database Configuration
+DB_SERVER=CMoney        # 您的 MSSQL Server 名稱
+DB_PORT=16888
+DB_DATABASE=股價即時
+DB_DRIVER=ODBC Driver 18 for SQL Server
+DB_TRUST_CERT=yes
+```
+
+**測試資料庫連線**：
+```powershell
+uv run python -c "from src.db.connection import test_connection; test_connection()"
+```
+
+**預期輸出**：
+```
+✅ Database connection successful!
+Server: CMoney:16888
+Database: 股價即時
+```
+
+**常見問題排解**：
+- ❌ `Connection failed`: 檢查 DB_SERVER 與 DB_PORT 是否正確
+- ❌ `Login failed`: 檢查 Windows 驗證或 SQL 帳密設定
+- ❌ `Driver not found`: 安裝 [ODBC Driver 18](https://learn.microsoft.com/sql/connect/odbc/download-odbc-driver-for-sql-server)
+
+---
+
+## 4. 啟動後端 API 服務
+
+### 4.1 開發模式啟動
+
+```powershell
+uv run uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+**預期輸出**：
+```
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process
+INFO:     Started server process
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+```
+
+### 4.2 驗證服務啟動
+
+開啟瀏覽器訪問：
+
+| 端點 | 說明 | URL |
+|------|------|-----|
+| **健康檢查** | 確認服務運行 | http://localhost:8000/health |
+| **API 文件** | Swagger UI 互動文件 | http://localhost:8000/docs |
+| **ReDoc** | 詳細 API 文件 | http://localhost:8000/redoc |
+
+**健康檢查預期回應**：
+```json
+{
+  "status": "healthy",
+  "timestamp": "2026-02-04T12:00:00",
+  "version": "0.1.0"
+}
 ```
 
 ---
 
-## 4. 後端設定（FastAPI）
+## 5. 測試 API 端點
 
-### 4.1 建立後端專案
-
-```bash
-# 建立後端目錄
-cd c:\程式開發\TaiwanMarketTimeMachine
-mkdir backend
-cd backend
-
-# 使用 uv 初始化專案
-uv init .
-uv add fastapi uvicorn[standard] pyodbc sqlalchemy python-dotenv
-
-# 安裝開發依賴
-uv add --dev pytest pytest-cov pytest-asyncio httpx
-```
-
-### 4.2 設定資料庫連線
-
-建立 `.env` 檔案（**請勿提交至 Git**）：
-
-```bash
-# backend/.env
-DB_SERVER=localhost
-DB_PORT=1433
-DB_DATABASE=taiwan_stock
-DB_USERNAME=your_username
-DB_PASSWORD=your_password
-DB_DRIVER=ODBC Driver 17 for SQL Server
-```
-
-**安全提示**：
-- 確認 `.env` 已加入 `.gitignore`
-- 生產環境使用環境變數或密鑰管理服務
-
-### 4.3 驗證資料庫連線
-
-建立測試腳本 `backend/test_connection.py`：
-
-```python
-import pyodbc
-import os
-from dotenv import load_dotenv
-
-load_dotenv()
-
-def test_connection():
-    conn_str = (
-        f"DRIVER={{{os.getenv('DB_DRIVER')}}};"
-        f"SERVER={os.getenv('DB_SERVER')},{os.getenv('DB_PORT')};"
-        f"DATABASE={os.getenv('DB_DATABASE')};"
-        f"UID={os.getenv('DB_USERNAME')};"
-        f"PWD={os.getenv('DB_PASSWORD')}"
-    )
-    
-    try:
-        conn = pyodbc.connect(conn_str)
-        cursor = conn.cursor()
-        cursor.execute("SELECT @@VERSION")
-        row = cursor.fetchone()
-        print("✅ 資料庫連線成功！")
-        print(f"SQL Server 版本：{row[0][:50]}...")
-        conn.close()
-    except Exception as e:
-        print(f"❌ 資料庫連線失敗：{e}")
-
-if __name__ == "__main__":
-    test_connection()
-```
-
-執行測試：
-
-```bash
-cd backend
-uv run python test_connection.py
-```
-
-### 4.4 執行後端伺服器
-
-```bash
-cd backend
-uv run uvicorn main:app --reload --port 8000
-```
-
-**驗證**：
-- 開啟瀏覽器：http://localhost:8000/docs
-- 應看到 FastAPI 自動生成的 API 文件（Swagger UI）
-
----
-
-## 5. 前端設定（Vue 3）
-
-### 5.1 建立前端專案
-
-```bash
-cd c:\程式開發\TaiwanMarketTimeMachine
-npm create vite@latest frontend -- --template vue-ts
-cd frontend
-npm install
-
-# 安裝依賴
-npm install tradingview-lightweight-charts@^4.1.0
-npm install axios
-npm install pinia
-
-# 安裝開發依賴
-npm install --save-dev @vitejs/plugin-vue vitest @vue/test-utils
-```
-
-### 5.2 設定 API Base URL
-
-建立 `frontend/.env.development`：
-
-```bash
-VITE_API_BASE_URL=http://localhost:8000/api/v1
-```
-
-### 5.3 執行前端開發伺服器
-
-```bash
-cd frontend
-npm run dev
-```
-
-**驗證**：
-- 開啟瀏覽器：http://localhost:5173
-- 應看到 Vue 3 預設首頁
-
----
-
-## 6. 測試設定
-
-### 6.1 後端測試設定
-
-建立 `backend/pyproject.toml` 中的測試配置：
-
-```toml
-[tool.pytest.ini_options]
-testpaths = ["../tests"]
-python_files = ["test_*.py"]
-python_classes = ["Test*"]
-python_functions = ["test_*"]
-addopts = [
-    "-v",
-    "--cov=backend",
-    "--cov-report=html:.artifacts/coverage/html",
-    "--cov-report=xml:.artifacts/coverage/coverage.xml",
-]
-cache_dir = ".artifacts/pytest_cache"
-
-[tool.coverage.run]
-data_file = ".artifacts/coverage/.coverage"
-source = ["backend"]
-omit = [
-    "*/tests/*",
-    "*/test_*.py",
-    "*/__pycache__/*",
-]
-
-[tool.coverage.html]
-directory = ".artifacts/coverage/html"
-```
-
-### 6.2 執行後端測試
-
-```bash
-cd backend
-uv run pytest
-```
-
-**查看 Coverage 報告**：
-- 開啟 `.artifacts/coverage/html/index.html`
-
-### 6.3 執行前端測試
-
-```bash
-cd frontend
-npm run test
-```
-
----
-
-## 7. 資料準備
-
-### 7.1 確認 stock_daily 表存在
-
-⚠️ **重要**：確認 `stock_daily` 表已建立並包含測試資料。
-
-**檢查方式**（使用 SSMS 或 sqlcmd）：
-
-```sql
--- 檢查表是否存在
-SELECT * FROM INFORMATION_SCHEMA.TABLES 
-WHERE TABLE_NAME = 'stock_daily';
-
--- 檢查資料筆數
-SELECT COUNT(*) FROM stock_daily;
-
--- 查看範例資料（2330 台積電）
-SELECT TOP 10 * 
-FROM stock_daily 
-WHERE stock_code = '2330' 
-ORDER BY trade_date DESC;
-```
-
-### 7.2 匯入測試資料（如需要）
-
-若資料表為空，可使用以下腳本匯入測試資料：
-
-```sql
--- 範例：插入 2330 台積電 2024-01-01 的資料
-INSERT INTO stock_daily (stock_code, trade_date, open_price, high_price, low_price, close_price, volume)
-VALUES ('2330', '2024-01-01', 580.00, 585.00, 578.00, 583.00, 12345678);
-```
-
-**生產資料來源**（M02/M03 規劃）：
-- 證交所開放資料 API
-- CSV 檔案匯入
-- 第三方資料提供商
-
----
-
-## 8. API 測試
-
-### 8.1 使用 cURL 測試
-
-```bash
-# 測試正常查詢
-curl "http://localhost:8000/api/v1/chart-data?stock_code=2330&start_date=2024-01-01&end_date=2024-01-31"
-
-# 測試錯誤處理（無效股票代碼）
-curl "http://localhost:8000/api/v1/chart-data?stock_code=XXXX&start_date=2024-01-01&end_date=2024-01-31"
-
-# 測試錯誤處理（日期範圍錯誤）
-curl "http://localhost:8000/api/v1/chart-data?stock_code=2330&start_date=2024-02-01&end_date=2024-01-01"
-```
-
-### 8.2 使用 Swagger UI 測試
+### 5.1 使用 Swagger UI（推薦）
 
 1. 開啟 http://localhost:8000/docs
-2. 展開 `GET /api/v1/chart-data`
+2. 展開 `GET /api/chart/daily`
 3. 點擊「Try it out」
 4. 輸入參數：
-   - stock_code: `2330`
-   - start_date: `2024-01-01`
-   - end_date: `2024-01-31`
+   - `stock_code`: `2330`
+   - `start_date`: `2024-01-01`
+   - `end_date`: `2024-01-31`
 5. 點擊「Execute」
-6. 檢查 Response
 
----
+**預期回應**（200 OK）：
+```json
+{
+  "stock_code": "2330",
+  "chart_data": [
+    {
+      "time": "2024-01-02",
+      "open": 585.0,
+      "high": 590.0,
+      "low": 583.0,
+      "close": 588.0,
+      "volume": 15234567.0
+    }
+    // ... 更多資料點
+  ],
+  "metadata": {
+    "stock_code": "2330",
+    "start_date": "2024-01-02",
+    "end_date": "2024-01-31",
+    "data_points": 20
+  }
+}
+```
 
-## 9. 常見問題
+### 5.2 使用 curl
 
-### Q1: 資料庫連線失敗
-
-**錯誤訊息**：`pyodbc.OperationalError: ('08001', ...)`
-
-**解決方式**：
-1. 確認 SQL Server 正在執行
-2. 確認 `.env` 中的連線參數正確
-3. 確認 SQL Server 允許遠端連線
-4. 確認防火牆已開放 1433 埠
-
-### Q2: uv 指令找不到
-
-**錯誤訊息**：`'uv' is not recognized as an internal or external command`
-
-**解決方式**：
-1. 確認 uv 已安裝：重新執行安裝腳本
-2. 重新啟動終端機（讓 PATH 生效）
-3. 手動加入 PATH：
-   ```powershell
-   $env:Path += ";$env:USERPROFILE\.local\bin"
-   ```
-
-### Q3: 前端無法連線至後端 API
-
-**錯誤訊息**：`CORS policy: No 'Access-Control-Allow-Origin' header`
-
-**解決方式**：
-1. 確認後端已啟用 CORS Middleware（參考 `contracts/chart-api.md` Section 7.3）
-2. 確認 `.env.development` 中的 `VITE_API_BASE_URL` 正確
-
-### Q4: TradingView Charts 無法載入
-
-**錯誤訊息**：`Cannot find module 'tradingview-lightweight-charts'`
-
-**解決方式**：
 ```bash
-cd frontend
-npm install tradingview-lightweight-charts@^4.1.0
+curl -X GET "http://localhost:8000/api/chart/daily?stock_code=2330&start_date=2024-01-01&end_date=2024-01-31" \
+  -H "Accept: application/json"
+```
+
+### 5.3 使用 Python
+
+```python
+import requests
+
+response = requests.get(
+    "http://localhost:8000/api/chart/daily",
+    params={
+        "stock_code": "2330",
+        "start_date": "2024-01-01",
+        "end_date": "2024-01-31"
+    }
+)
+
+if response.status_code == 200:
+    data = response.json()
+    print(f"股票: {data['stock_code']}")
+    print(f"資料點數: {data['metadata']['data_points']}")
+    
+    # 顯示前 5 筆資料
+    for point in data['chart_data'][:5]:
+        print(f"{point['time']}: 開={point['open']}, 收={point['close']}, 量={point['volume']}")
+else:
+    print(f"錯誤: {response.status_code}")
+    print(response.json())
+```
+
+### 5.4 錯誤處理測試
+
+#### 測試無效日期範圍
+
+```bash
+curl -X GET "http://localhost:8000/api/chart/daily?stock_code=2330&start_date=2024-01-31&end_date=2024-01-01"
+```
+
+**預期回應**（400 Bad Request）：
+```json
+{
+  "detail": {
+    "error": {
+      "code": "INVALID_DATE_RANGE",
+      "message": "參數驗證錯誤",
+      "details": "起始日期 (2024-01-31) 不得大於結束日期 (2024-01-01)"
+    }
+  }
+}
+```
+
+#### 測試查無資料
+
+```bash
+curl -X GET "http://localhost:8000/api/chart/daily?stock_code=9999&start_date=2024-01-01&end_date=2024-01-31"
+```
+
+**預期回應**（200 OK，空資料）：
+```json
+{
+  "stock_code": "9999",
+  "chart_data": [],
+  "metadata": {
+    "stock_code": "9999",
+    "start_date": "2024-01-01",
+    "end_date": "2024-01-31",
+    "data_points": 0
+  }
+}
 ```
 
 ---
 
-## 10. 下一步
+## 6. 執行測試
 
-完成環境設定後，建議依序進行：
+### 6.1 執行所有測試
 
-1. **閱讀規格文件**：
-   - [spec.md](./spec.md) — Feature 完整規格
-   - [data-model.md](./data-model.md) — 資料模型
-   - [contracts/chart-api.md](./contracts/chart-api.md) — API 契約
+```powershell
+uv run pytest tests/ -v
+```
 
-2. **開發任務**：
-   - 參考 `tasks.md`（Phase 2 生成）
-   - 遵循 TDD 流程（先測試後實作）
+**預期輸出**：
+```
+======================== 61 passed, 1 warning in 1.5s ========================
+```
 
-3. **提交變更**：
-   - 使用 Git Feature Branch 工作流程
-   - Commit Message 遵循規範（參考 `copilot-instructions.md` Section 12）
+### 6.2 執行特定測試
+
+```powershell
+# 只執行單元測試
+uv run pytest tests/unit/ -v
+
+# 只執行整合測試
+uv run pytest tests/integration/ -v
+
+# 執行特定測試檔案
+uv run pytest tests/integration/test_chart_api.py -v
+```
+
+### 6.3 生成覆蓋率報告
+
+```powershell
+uv run pytest tests/ -v --cov=src --cov-report=term-missing --cov-report=html:.artifacts/coverage/html
+```
+
+**開啟覆蓋率報告**：
+```powershell
+start .artifacts/coverage/html/index.html
+```
+
+**預期覆蓋率**：89%（核心模組 100%）
 
 ---
 
-## 11. 技術支援
+## 7. 查看文件
 
-**遇到問題？**
-- 📖 查閱 [troubleshooting.md](../../docs/setup-guides/troubleshooting.md)
-- 💬 詢問 Tech Lead 或專案負責人
-- 🐛 建立 GitHub Issue（標籤：`help wanted`, `question`）
+### 7.1 API 契約文件
+
+詳細的 API 規範、錯誤碼、使用範例：
+
+```powershell
+# 使用 VS Code 開啟
+code specs/features/001-basic-chart-api/contracts/chart-api.md
+```
+
+**包含內容**：
+- Request/Response 完整格式
+- 錯誤碼對照表
+- 向後相容策略
+- curl/Python/JavaScript 使用範例
+- TradingView Charts 整合指引
+
+### 7.2 其他文件
+
+| 文件 | 路徑 | 說明 |
+|------|------|------|
+| **Feature Spec** | `specs/features/001-basic-chart-api/spec.md` | User Story 定義 |
+| **Data Model** | `specs/features/001-basic-chart-api/data-model.md` | 資料結構與聚合邏輯 |
+| **Technical Plan** | `specs/features/001-basic-chart-api/plan.md` | 技術架構規劃 |
+| **Tasks** | `specs/features/001-basic-chart-api/tasks.md` | 實作任務清單 |
 
 ---
 
-**文件版本**：v1.0.0  
-**維護者**：AI Development Team  
-**最後更新**：2026-02-03
+## 8. 常見問題排解
+
+### 8.1 資料庫連線失敗
+
+**症狀**：`pyodbc.OperationalError: ('08001', ...)`
+
+**解決方案**：
+1. 檢查 `.env` 檔案中的 `DB_SERVER` 與 `DB_PORT`
+2. 確認 SQL Server 服務正在運行
+3. 測試連線：`sqlcmd -S CMoney,16888 -Q "SELECT @@VERSION"`
+4. 檢查防火牆設定
+
+### 8.2 測試失敗
+
+**症狀**：部分測試失敗或 import 錯誤
+
+**解決方案**：
+```powershell
+# 清除快取並重新安裝
+Remove-Item -Recurse -Force .venv, .artifacts/pytest_cache
+uv sync
+uv run pytest tests/ -v
+```
+
+### 8.3 Port 8000 已被佔用
+
+**症狀**：`Address already in use`
+
+**解決方案**：
+```powershell
+# 使用不同 Port
+uv run uvicorn src.main:app --reload --port 8001
+
+# 或終止佔用 Port 的程序（Windows）
+netstat -ano | findstr :8000
+taskkill /PID <PID> /F
+```
+
+### 8.4 ODBC Driver 未安裝
+
+**症狀**：`Data source name not found`
+
+**解決方案**：
+1. 下載 [ODBC Driver 18 for SQL Server](https://learn.microsoft.com/sql/connect/odbc/download-odbc-driver-for-sql-server)
+2. 安裝後重新測試連線
+
+---
+
+## 9. 下一步
+
+### 9.1 開發新功能
+
+```powershell
+# 使用 SpecKit 流程
+/speckit.clarify "新功能描述"
+/speckit.plan
+/speckit.tasks
+/speckit.implement
+```
+
+### 9.2 前端整合（M02）
+
+目前後端 API 已完成，前端開發將在 M02 milestone 進行：
+- Vue 3 + Vite 專案初始化
+- TradingView Lightweight Charts 整合
+- 圖表互動操作（Zoom/Pan/Crosshair）
+- Loading 狀態與錯誤處理
+
+### 9.3 學習資源
+
+- [FastAPI 官方文件](https://fastapi.tiangolo.com/)
+- [Pydantic 驗證](https://docs.pydantic.dev/)
+- [pytest 測試框架](https://docs.pytest.org/)
+- [SpecKit + FlowKit 開發流程](../../docs/01.開發人員doc/03.SDD開發流程指南.md)
+
+---
+
+## 10. 驗收檢查清單
+
+完成以下檢查確認環境設定正確：
+
+- [ ] ✅ uv 與 Python 3.14+ 已安裝
+- [ ] ✅ 專案依賴已安裝（`uv sync`）
+- [ ] ✅ 資料庫連線測試成功
+- [ ] ✅ FastAPI 服務啟動正常
+- [ ] ✅ 健康檢查端點回應正常（http://localhost:8000/health）
+- [ ] ✅ API 文件可訪問（http://localhost:8000/docs）
+- [ ] ✅ 測試日K線 API 成功（`stock_code=2330`）
+- [ ] ✅ 所有測試通過（`pytest tests/ -v`）
+- [ ] ✅ 覆蓋率報告生成（89%）
+
+---
+
+**建議學習時間**：
+- 環境設定：5 分鐘
+- API 測試：5 分鐘
+- 執行測試：5 分鐘
+- 文件閱讀：5 分鐘
+
+**總計**：約 20 分鐘
