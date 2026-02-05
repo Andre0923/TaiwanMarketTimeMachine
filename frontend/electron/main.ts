@@ -1,5 +1,10 @@
 import { app, BrowserWindow } from 'electron'
 import path from 'path'
+import { fileURLToPath } from 'url'
+
+// ESM 模式下需要手動定義 __dirname
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
 // Electron 主程序入口
 // 負責：視窗管理、應用程式生命週期、原生 API 整合

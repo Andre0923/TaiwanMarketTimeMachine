@@ -1,5 +1,8 @@
 import { app, BrowserWindow } from "electron";
 import path from "path";
+import { fileURLToPath } from "url";
+const __filename$1 = fileURLToPath(import.meta.url);
+const __dirname$1 = path.dirname(__filename$1);
 let mainWindow = null;
 const isDev = process.env.NODE_ENV === "development";
 function createMainWindow() {
@@ -9,7 +12,7 @@ function createMainWindow() {
     minWidth: 1200,
     minHeight: 700,
     webPreferences: {
-      preload: path.join(__dirname, "preload.js"),
+      preload: path.join(__dirname$1, "preload.js"),
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true
@@ -27,7 +30,7 @@ function createMainWindow() {
     mainWindow.loadURL(url);
     mainWindow.webContents.openDevTools();
   } else {
-    mainWindow.loadFile(path.join(__dirname, "../dist/index.html"));
+    mainWindow.loadFile(path.join(__dirname$1, "../dist/index.html"));
   }
   mainWindow.on("closed", () => {
     mainWindow = null;
