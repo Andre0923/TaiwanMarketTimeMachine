@@ -9,19 +9,33 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import axios from 'axios'
-import { ChartAPI } from '../services/chartApi'
-import { ErrorCode } from '../types/chart'
 import type { ChartResponse, ChartQueryParams } from '../types/chart'
+import { ErrorCode } from '../types/chart'
 
-// Mock axios module
-vi.mock('axios')
+// 在模組載入前建立 mock
+const mockAxiosInstance = {
+  get: vi.fn()
+}
+
+const mockIsAxiosError = vi.fn()
+
+// 使用 vi.mock 攔截 axios 模組
+vi.mock('axios', () => ({
+  default: {
+    create: vi.fn(() => mockAxiosInstance),
+    isAxiosError: mockIsAxiosError
+  }
+}))
+
+// 動態匯入 ChartAPI（在 mock 之後）
+const { ChartAPI } = await import('../services/chartApi')
 
 describe('ChartAPI - 參數驗證', () => {
   let api: ChartAPI
 
   beforeEach(() => {
     vi.clearAllMocks()
+    mockAxiosInstance.get.mockReset()
     api = new ChartAPI()
   })
 
@@ -89,16 +103,12 @@ describe('ChartAPI - 參數驗證', () => {
 
 describe('ChartAPI - API 呼叫', () => {
   let api: ChartAPI
-  let mockAxiosInstance: any
 
   beforeEach(() => {
     vi.clearAllMocks()
-    
-    mockAxiosInstance = {
-      get: vi.fn()
-    }
-    
-    vi.mocked(axios.create).mockReturnValue(mockAxiosInstance as any)
+    mockAxiosInstance.get.mockReset()
+    // 預設 isAxiosError 返回 false（除非特定測試覆蓋）
+    mockIsAxiosError.mockReturnValue(false)
     
     api = new ChartAPI()
   })
@@ -170,17 +180,12 @@ describe('ChartAPI - API 呼叫', () => {
 
 describe('ChartAPI - 錯誤處理', () => {
   let api: ChartAPI
-  let mockAxiosInstance: any
 
   beforeEach(() => {
     vi.clearAllMocks()
-    
-    mockAxiosInstance = {
-      get: vi.fn()
-    }
-    
-    vi.mocked(axios.create).mockReturnValue(mockAxiosInstance as any)
-    vi.mocked(axios.isAxiosError).mockReturnValue(true)
+    mockAxiosInstance.get.mockReset()
+    // 預設 isAxiosError 返回 true（錯誤處理測試）
+    mockIsAxiosError.mockReturnValue(true)
     
     api = new ChartAPI()
   })
@@ -217,7 +222,8 @@ describe('ChartAPI - 錯誤處理', () => {
     const timeoutError = {
       isAxiosError: true,
       code: 'ETIMEDOUT',
-      message: 'Timeout Error'
+      message: 'Timeout Error',
+      response: undefined
     }
 
     mockAxiosInstance.get.mockRejectedValue(timeoutError)
