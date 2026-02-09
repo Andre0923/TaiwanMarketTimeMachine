@@ -1,7 +1,7 @@
 # Data Model: Taiwan Market Time Machine（台股時光機）
 
-> **Version**: 0.2.0  
-> **Last Updated**: 2026-02-04
+> **Version**: 0.3.0  
+> **Last Updated**: 2026-02-09
 
 ---
 
@@ -100,7 +100,26 @@
 
 ---
 
-## 3. Relationships
+## 3. Frontend Type Definitions
+
+> **注意**：Frontend 使用 TypeScript 定義型別，與 Backend Python 模型對應
+
+### ChartLoadingState (Frontend)
+
+**用途**：圖表載入狀態枚舉
+
+| 值 | 說明 |
+|----|------|
+| `idle` | 初始狀態，尚未開始載入 |
+| `loading` | 正在從 API 取得資料 |
+| `success` | 資料載入成功，圖表已渲染 |
+| `error` | 載入失敗，顯示錯誤訊息 |
+
+**實作位置**：`frontend/src/types/chart.ts`
+
+---
+
+## 4. Relationships
 
 ```mermaid
 erDiagram
@@ -136,21 +155,10 @@ erDiagram
 
 ---
 
-## 4. Version History
+## 5. Version History
 
 | 版本 | 日期 | 變更說明 |
 |------|------|----------|
+| 0.3.0 | 2026-02-09 | **新增前端型別定義**<br>- 新增 ChartLoadingState（前端狀態枚舉）<br>來源：Feature 002-frontend-chart-interactions |
 | 0.2.0 | 2026-02-04 | 新增核心模型：ChartDataPoint, ChartResponse, ChartMetadata, ErrorResponse<br>定義 ErrorCode 列舉<br>新增關聯圖 |
 | 0.1.0 | 2026-02-03 | 初始版本（空白範本）|
-
-<!-- 描述實體之間的關係 -->
-
-> 📝 **尚未定義關聯** - 依需要新增
-
----
-
-## Version History
-
-| 版本 | 日期 | 變更說明 |
-|------|------|----------|
-| 0.1.0 | YYYY-MM-DD | 初始版本 |
