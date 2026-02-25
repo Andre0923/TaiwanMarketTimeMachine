@@ -433,6 +433,61 @@ IF any check fails:
 | 難度控制 | 高難度 US 可延後 |
 | Group 完整性 | 若整組適合一次開發，可整組納入 |
 
+### Tech Debt 納入建議（MILESTONE 模式限定）
+
+在 `--milestone`（AUTO 或 MANUAL）模式下，Milestone 產出 SHOULD 包含 **`[OPTIONAL] Tech Debt 納入建議`** 區段。
+
+#### 讀取流程
+
+```
+1. 讀取 docs/technical-debt.md
+2. 篩選條件：
+   - Status = Open
+   - Milestone-Candidate = true
+3. 依 Priority → Created 排序（P1 優先，同級別依建立時間）
+4. 產出建議區段
+```
+
+#### 產出格式
+
+在 Milestone 檔案的 `## 延後的 User Stories` 之後，加入：
+
+```markdown
+## [OPTIONAL] Tech Debt 納入建議
+
+> 以下為 Technical Debt Registry 中標記 `Milestone-Candidate: true` 的開放項目。
+> 本區段為**建議性質**，是否納入由人類決定，不影響 Milestone linting。
+
+| TD ID | 標題 | Priority | Type | 來源 | 建議 US 編號 |
+|-------|------|----------|------|------|-------------|
+| TD-001 | ... | P2 | test-regression | code-check | US-TD-1 |
+| TD-002 | ... | P2 | code-quality | system-health | US-TD-2 |
+
+### US-TD-N 格式範例
+
+若人類決定納入某 TD，可在 Milestone 中新增維護型 US：
+
+### US-TD-1: 修復 {TD 描述}
+
+**As a** 開發團隊  
+**I want** 修復 {TD 描述}  
+**So that** 降低技術負債並改善 {Component} 的品質
+
+#### Acceptance Criteria
+
+**AC1 — 問題修復**
+- **Given** {TD 的前置條件}
+- **When** 執行修復
+- **Then** {TD 的完成條件}
+```
+
+#### 限制
+
+- 本區段**不影響** Milestone File Linting（不會因缺少此區段而 FAIL）
+- TD 納入決定由**人類**做出，AI 僅提供建議
+- 若 `docs/technical-debt.md` 不存在或無 Open + Milestone-Candidate 項目，此區段可省略
+- US-TD-N 編號不與既有 US X-N 編號空間衝突（使用 `TD` 作為 Group 代碼）
+
 ### Milestone 輸出格式
 
 ```markdown

@@ -1,7 +1,7 @@
 # FlowKit Trace 功能說明
 
 > **指令名稱**：`/flowkit.trace`  
-> **Agent 檔案**：`flowkit/agents/flowkit.trace.agent.md`  
+> **Agent 檔案**：`.github/agents/flowkit.trace.agent.md`  
 > **相關 Template**：`flowkit/templates/traceability-index-template.md`
 
 ---
@@ -60,6 +60,17 @@
 | `tasks.md` 存在 | REQUIRED | 需要 [US*] 標籤對應 |
 | 程式碼已實作 | RECOMMENDED | 掃描 @spec 註解 |
 | 測試已撰寫 | OPTIONAL | 用於 AC 覆蓋率計算 |
+
+### 2.3 `--default` 模式
+
+> 📝 **詳細說明**：請參考 [功能說明-default-mode.md](./功能說明-default-mode.md)
+
+```bash
+# GitHub Copilot Agent 模式
+@workspace /flowkit.trace --default
+```
+
+使用 `--default` 時，指令會自動偵測當前工作的 Feature 目錄，並掃描相關程式碼與測試產生追溯索引。
 
 ---
 
@@ -304,6 +315,6 @@ tasks.md [US1] 標籤 ──────────┐
 
 | 檔案 | 路徑 |
 |------|------|
-| Agent 指令 | `flowkit/agents/flowkit.trace.agent.md` |
+| Agent 指令 | `.github/agents/flowkit.trace.agent.md` |
 | Index Template | `flowkit/templates/traceability-index-template.md` |
 | 功能提案 | `docs/design-proposals/traceability-feature-proposal.md` |

@@ -21,7 +21,7 @@
 
 3. **開啟專案資料夾**：
    ```
-   E:\Dropbox\80.Investment Research\88.SKY888回測專案\06.Victor\09.Python\77.TaskScheduler
+   C:\Projects\your-project-name
    ```
 
 ---

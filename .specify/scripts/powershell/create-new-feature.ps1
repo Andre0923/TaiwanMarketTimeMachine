@@ -214,6 +214,10 @@ function Get-BranchName {
         # Fallback to original logic if no meaningful words found
         $result = ConvertTo-CleanBranchName -Name $Description
         $fallbackWords = ($result -split '-') | Where-Object { $_ } | Select-Object -First 3
+        if ($fallbackWords.Count -eq 0) {
+            # All characters were non-ASCII (e.g., Chinese-only description)
+            return 'feature'
+        }
         return [string]::Join('-', $fallbackWords)
     }
 }
@@ -225,6 +229,11 @@ if ($ShortName) {
 } else {
     # Generate from description with smart filtering
     $branchSuffix = Get-BranchName -Description $featureDesc
+}
+
+# Final safety net: ensure branch suffix is never empty
+if (-not $branchSuffix) {
+    $branchSuffix = 'feature'
 }
 
 # Determine branch number
@@ -265,10 +274,9 @@ if ($branchName.Length -gt $maxBranchLength) {
 }
 
 if ($hasGit) {
-    try {
-        git checkout -b $branchName | Out-Null
-    } catch {
-        Write-Warning "Failed to create git branch: $branchName"
+    git checkout -b $branchName 2>$null
+    if ($LASTEXITCODE -ne 0) {
+        Write-Warning "Failed to create git branch: $branchName (may already exist or other git error)"
     }
 } else {
     Write-Warning "[specify] Warning: Git repository not detected; skipped branch creation for $branchName"

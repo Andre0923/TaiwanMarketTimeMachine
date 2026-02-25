@@ -1,0 +1,8 @@
+# Interactive 模式（預設）
+/speckit.clarify
+
+# Batch 模式
+/speckit.clarify --batch
+/speckit.clarify 批次模式
+/speckit.clarify 多題問答
+/speckit.clarify 一次問完

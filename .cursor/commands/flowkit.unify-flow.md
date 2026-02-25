@@ -13,7 +13,9 @@
 $ARGUMENTS
 ```
 
-在繼續執行之前，您**必須（MUST）**考慮使用者輸入（若非空白）。
+> 💡 **`--default` 模式**：輸入 `--default` 等同於無額外指示，直接執行預設流程。
+
+在繼續執行之前，您**必須（MUST）**考慮使用者輸入（若非空白或 `--default`）。
 
 ---
 
@@ -427,6 +429,11 @@ IF any check fails:
 
 **執行**：
 
+0. **更新 Feature Status 為 Unified**：
+   - 更新 `spec.md` YAML frontmatter：`status: Unified`
+   - 更新 inline 標記：`> **Status**: Unified`
+   - 此狀態變更屬於**封存前元資料更新**，確保歷史記錄反映最終狀態
+
 1. **移動整個 Feature 目錄至 history**：
    ```bash
    # 將整個 Feature 目錄移至 history
@@ -593,8 +600,85 @@ IF any check fails:
 
 ---
 
-## 完成標準（Definition of Done）
+### Phase 6.5：Feature Summary 自動產生
 
+**目的**：將本次 Feature 的開發經驗萃取為結構化摘要，供後續 Feature 開發參考。
+
+**執行**：
+
+1. **建立目錄**（若不存在）：
+   ```bash
+   mkdir -p .flowkit/memory/learning/feature-summaries/
+   ```
+
+2. **產生 Feature Summary**：寫入 `.flowkit/memory/learning/feature-summaries/NNN-feature-name-summary.md`
+   - 依範本 `.flowkit/templates/feature-summary.template.md` 產生
+
+3. **資料來源**：
+   - `spec.md`：US/AC 統計
+   - `plan.md`：關鍵決策
+   - `spec-delta-log.md`：規格差異記錄統計
+   - `.refine/`：refine-loop 循環數
+   - `code-check-report-*.md`：code-check 循環數
+   - Escalation Log：Unify 過程商議記錄
+
+4. **強度等級**：SHOULD（產生失敗不阻擋 Unify Flow 完成）
+
+> 📌 Feature Summary 為經驗累積機制，後續可由 `plan` 階段參考，提升工時預估精準度。
+
+---
+
+### Phase 7：TD Reconciliation（技術債結案）
+
+**目的**：比對 Feature 中的 TD Ref 標註與 `docs/technical-debt.md` 的 Open TD，提議結案。
+
+**觸發條件**：本 Phase 在 System Spec 合併完成後、最終報告產出前執行。
+
+**前置檢查**：
+- **IF NOT EXISTS** `docs/technical-debt.md` → 跳過本 Phase（專案尚未建立 TD Registry）
+- **IF** `docs/technical-debt.md` 無 Open / In Progress 項目 → 跳過本 Phase
+
+**執行**：
+
+1. **讀取現有 TD**：
+   - 讀取 `docs/technical-debt.md` 中所有 Open / In Progress TD（ID、標題、Component、Dedup-Key）
+
+2. **收集 TD Ref 標註**：
+   - 讀取 Feature `spec.md` 中所有 `> TD Ref: TD-XXX` 標註
+   - 建立對應關係：TD-XXX → US XX-N
+
+3. **產出候選結案清單**：
+   - **直接解決**：Feature US 有 TD Ref 標註 → 建議 Resolved
+   - **附帶解決偵測**：取得本次 Feature 的 git diff 涉及的檔案清單，比對 Open TD 的 Component 欄位，若有交集但無 TD Ref → 建議人類確認
+
+4. **MUST ASK 人類確認每一項結案決定**：
+   ```markdown
+   ## TD Reconciliation 候選清單
+
+   | TD | 標題 | 結案方式 | 來源 US | 狀態 |
+   |----|------|----------|---------|------|
+   | TD-001 | XXX | Resolved | US A-1 | 待確認 |
+   | TD-005 | YYY | 附帶解決？ | (偵測) | 待確認 |
+
+   請確認每一項的結案決定，或調整為 Won't Fix / 維持 Open。
+   ```
+
+5. **確認後更新 `docs/technical-debt.md`**：
+   - Status → Resolved / Won't Fix
+   - 填入 `Resolved-By`：`Feature-NNN US XX-N`
+   - 填入 `Resolved-Date`：當日日期
+   - Won't Fix 填入 `Won't-Fix-Reason`
+   - 從 Active Items 表移至 Resolved 表
+   - 更新檔案頂部統計數字
+
+6. **輸出結案摘要**（納入 Unify Report）：
+   - N 項 Resolved、M 項 Won't Fix、K 項維持 Open
+
+**強度等級**：SHOULD（TD Registry 不存在或無 Open 項目時自動跳過，不阻擋 Unify Flow 完成）
+
+---
+
+## 完成標準（Definition of Done）
 統合流程僅在下列條件**全部符合**時視為完成：
 
 ```markdown
@@ -611,6 +695,7 @@ IF any check fails:
 - [ ] `specs/features/NNN-feature-name/` 已不存在
 - [ ] Phase 5 合併操作驗證通過
 - [ ] 統合摘要已產生
+- [ ] TD Reconciliation 已執行（或無 Open TD 而跳過）
 - [ ] Escalation Log 已完整記錄
 
 ### 禁止殘留
@@ -672,6 +757,7 @@ IF any check fails:
 | Phase 4：封存 Feature | ✅/❌ | - |
 | Phase 5：合併操作驗證 | ✅/❌ | 迭代 K 次 |
 | Phase 6：產生摘要 | ✅/❌ | - |
+| Phase 7：TD Reconciliation | ✅/❌/➖ | N 項 Resolved / M 項 Won't Fix / 跳過 |
 
 ### Escalation Log（深讀記錄）
 | 階段 | 目標位置 | 深讀原因 | 讀取範圍 |

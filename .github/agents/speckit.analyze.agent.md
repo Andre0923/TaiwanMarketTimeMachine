@@ -8,7 +8,9 @@ description: Perform a non-destructive cross-artifact consistency and quality an
 $ARGUMENTS
 ```
 
-You **MUST** consider the user input before proceeding (if not empty).
+> 💡 **`--default` 模式**：輸入 `--default` 等同於無額外指示，直接執行預設流程。
+
+You **MUST** consider the user input before proceeding (if not empty or `--default`).
 
 ## Goal
 
@@ -104,7 +106,31 @@ Focus on high-signal findings. Limit to 50 findings total; aggregate remainder i
 - Tasks with no mapped requirement/story
 - Non-functional requirements not reflected in tasks (e.g., performance, security)
 
+**Affected Files 容差規則**：
+
+plan.md Affected Files 列出的檔案分為「主要修改檔案」（有專屬 task）和「間接影響檔案」（因依賴可能被觸及但無專屬 task）：
+
+| 條件 | 判定 | 嚴重度 |
+|------|------|--------|
+| plan 列出的檔案有對應的 [US] 標籤 task | ✅ 已覆蓋 | 無 |
+| plan 列出的檔案無 task，但位於已有 task 的相鄰模組（同目錄/同 package） | ⚠️ 可能間接觸及 | LOW（建議確認是否需要顯式 task） |
+| plan 列出的檔案無 task，且不在任何 task 涉及的模組範圍 | ❌ 覆蓋缺口 | MEDIUM |
+
 #### F. Inconsistency
+
+**遞進精鍊感知規則（Progressive Refinement Awareness）**：
+
+spec.md 的 Key Entities 與 `data-model.md` / `contracts/` 之間為「概念摘要 → 精鍊定義」的遞進關係（specify → plan 的自然演進），分析時 MUST 區分「精鍊展開」與「真正不一致」：
+
+| 差異類型 | 判定 | 嚴重度 |
+|----------|------|--------|
+| data-model.md 比 spec.md 多出欄位 | ✅ 正常精鍊 | INFO（不列入報告） |
+| data-model.md 修改了 spec.md 的欄位命名 | ⚠️ 精鍊改名 | LOW（建議 spec 加註「完整定義見 data-model.md」） |
+| data-model.md 修改了 spec.md 的列舉值 | ⚠️ 精鍊擴充 | LOW（若為擴充）/ MEDIUM（若為刪減或語義衝突） |
+| data-model.md 新增了 spec.md 未提到的全新 Entity | ⚠️ 需檢查 | MEDIUM（可能遺漏需求或過度設計） |
+| spec.md 有 Entity 但 data-model.md 完全未定義 | ❌ 真正缺失 | HIGH |
+
+偵測到精鍊展開差異時，報告 SHOULD 使用措辭：「spec.md §N 的 {Entity} 與 data-model.md 的精鍊版本存在 {差異類型}。data-model.md 為資料定義權威，建議在 spec.md 加註引用或在 remediation 時同步。」
 
 - Terminology drift (same concept named differently across files)
 - Data entities referenced in plan but absent in spec (or vice versa)
@@ -123,6 +149,18 @@ Focus on high-signal findings. Limit to 50 findings total; aggregate remainder i
 | G4. Confirmation Rules | Irreversible actions should follow ux-guidelines.md confirmation rules | MEDIUM |
 | G5. Maturity Gate | If UI Maturity Target = L1, verify L1 prerequisites exist: (1) Global States 規則 (2) Confirmation policy (3) Screen/Flow catalog | HIGH |
 | G6. NEEDS UI DEFINITION | All `[NEEDS UI DEFINITION]` markers must have resolution tasks in plan.md | HIGH |
+
+**L0 Maturity 降級規則**：
+
+若 spec.md 宣告 `UI Maturity Target = L0`，以下檢查項目 MUST 降級：
+
+| Check | 原嚴重度 | L0 降級後 | 理由 |
+|-------|----------|-----------|------|
+| G1. ID Existence | HIGH | INFO | L0 允許 `specs/system/ui/` 不存在，UI ID 為占位預分配 |
+| G5. Maturity Gate | HIGH | SKIP | L1 前提檢查僅在 Target = L1 時啟動 |
+| G6. NEEDS UI DEFINITION | HIGH | INFO | L0 = Draft（Constitution §3.6.2），允許 `[UI-TBD]` 與 `[NEEDS UI DEFINITION]` 存在 |
+
+其餘 G 通道檢查（G2/G3/G4）維持原嚴重度。當 Target = L0 時，報告 SHOULD 在 G channel 區塊前加註：「G channel 以 L0 模式執行（UI Maturity Target = L0）。部分檢查已降級。」
 
 **Skip Condition**: If UI Impact = None, skip entire G channel and note "G channel skipped: UI Impact = None"
 
@@ -180,6 +218,29 @@ Ask the user: "Would you like me to suggest concrete remediation edits for the t
 ### 9. Git Checkpoint (If Remediation Applied)
 
 **After user-approved remediation edits are applied**, execute `git add . && git commit -m "docs: Analyze 分析 [FEATURE_NAME]" && git push`.
+
+### 9.5 Spec 修訂標記自動注入
+
+**If remediation edits modified any US or AC in spec.md**, AI MUST automatically inject change markers **before** the Git Checkpoint (§9):
+
+1. **修改既有 US/AC** → 在標題末尾加上 `[MODIFIED]`
+2. **新增 US/AC** → 在標題末尾加上 `[NEW]`
+3. **刪除 US/AC** → 在標題末尾加上 `[DELETED]`
+
+**範例**：
+```markdown
+### US A-1: 使用者登入 [MODIFIED]
+### US A-3: 密碼重設 [NEW]
+### US A-2: 舊版登入 [DELETED]
+```
+
+**規則**：
+- 標記 MUST 放在標題行末尾，格式為 ` [TAG]`（前面一個空格）
+- 若標題已有標記，不重複加上
+- 標記注入後，在報告的 Next Actions 區塊中簡述哪些 US/AC 被標記
+
+> 📌 此自動標記確保下游 `/flowkit.requirement-sync` 能正確識別「刻意修正」。
+> 若未有標記，requirement-sync 會將差異歸類為「非意圖不一致」並逐項詢問確認。
 
 ## Operating Principles
 

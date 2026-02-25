@@ -12,7 +12,9 @@ handoffs:
 $ARGUMENTS
 ```
 
-You **MUST** consider the user input before proceeding (if not empty).
+> 💡 **`--default` 模式**：輸入 `--default` 等同於無額外指示，直接執行預設流程。
+
+You **MUST** consider the user input before proceeding (if not empty or `--default`).
 
 ---
 
@@ -261,6 +263,36 @@ Integration after answers are accepted (approach varies by mode):
 7. Write the updated spec back to `FEATURE_SPEC`.
 
 8. **Git Checkpoint**: After all clarifications are integrated, execute `git add . && git commit -m "docs: 完成 Spec 釐清 [FEATURE_NAME]" && git push`.
+
+### 8.5 Spec 修訂標記自動注入
+
+**If integration edits modified any US or AC in spec.md**, AI MUST automatically inject change markers **before** the Git Checkpoint (§8):
+
+1. **修改既有 US/AC** → 在標題末尾加上 `[MODIFIED]`
+2. **新增 US/AC** → 在標題末尾加上 `[NEW]`
+3. **刪除 US/AC** → 在標題末尾加上 `[DELETED]`
+
+**規則**：
+- 標記 MUST 放在標題行末尾，格式為 ` [TAG]`（前面一個空格）
+- 若標題已有標記，不重複加上
+- 標記注入後，在報告中簡述哪些 US/AC 被標記
+
+> 📌 此自動標記確保下游 `/flowkit.requirement-sync` 能正確識別「刻意修正」。
+
+### 8.6 Spec Delta Log 規格差異日誌
+
+**在釐清過程中**，若發現 spec.md 與預期存在規格差異（例如模糊描述、需求衝突、遺漏場景），SHOULD 記錄到 `FEATURE_DIR/spec-delta-log.md`：
+
+> 若檔案不存在，依據 `.flowkit/templates/spec-delta-log.template.md` 範本建立。
+
+```markdown
+| ID | Stage | Phase | Type | Original (spec/plan) | Actual/Discovery | Impact | Action |
+|----|-------|-------|------|---------------------|-----------------|--------|--------|
+| D1 | clarify | Q2 | 需求澄清 | spec: 模糊描述「快速響應」 | 使用者確認為 <500ms | US-A-1 AC2 | 更新 spec ✅ |
+```
+
+- 若檔案不存在，建立並加上標題和表頭
+- Stage 欄位固定填 `clarify`
 
 9. Report completion (after questioning loop ends or early termination):
    - **Operating mode used** (Interactive / Batch).

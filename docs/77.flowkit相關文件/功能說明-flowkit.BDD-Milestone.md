@@ -1,7 +1,7 @@
 # FlowKit BDD-Milestone Builder 功能說明
 
 > **指令名稱**：`/flowkit.BDD-Milestone`  
-> **Agent 檔案**：`flowkit/agents/flowkit.BDD-Milestone.agent.md`  
+> **Agent 檔案**：`.github/agents/flowkit.BDD-Milestone.agent.md`  
 > **相關 Templates**：
 > - `docs/requirements/user-stories/README-template.md`
 > - `docs/requirements/user-stories/US-X-GroupName-template.md`
@@ -729,7 +729,7 @@ Group A 難度不高，整組一起做
 
 | 類型 | 位置 |
 |------|------|
-| Agent 指令檔 | `flowkit/agents/flowkit.BDD-Milestone.agent.md` |
+| Agent 指令檔 | `.github/agents/flowkit.BDD-Milestone.agent.md` |
 | README Template | `docs/requirements/user-stories/README-template.md` |
 | US Group Template | `docs/requirements/user-stories/US-X-GroupName-template.md` |
 | Milestone Template | `docs/requirements/Milestone/MNN-MilestoneName-template.md` |

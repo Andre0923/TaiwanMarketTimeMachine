@@ -1,7 +1,7 @@
 # FlowKit Refine Loop 功能說明
 
 > **指令名稱**：`/flowkit.refine-loop`  
-> **Agent 檔案**：`flowkit/agents/flowkit.refine-loop.agent.md`  
+> **Agent 檔案**：`.github/agents/flowkit.refine-loop.agent.md`  
 > **相關目錄**：`FEATURE_DIR/.refine/RC<NNN>/`（產物儲存）
 
 ---
@@ -39,6 +39,7 @@
 - 發現 Bug 需要修正
 - 需要微調行為或參數
 - 需求小幅變更（< 5 個新 US）
+- **code-check 產出的 Bug-Fix 清單**（非功能回歸的 EASY/MEDIUM 修復，自動以 `--default` 模式接收）
 
 **不適用情境**（改用完整 SpecKit）：
 - 新增 User Stories > 5 個
@@ -54,13 +55,18 @@
                  /speckit.tasks → /speckit.implement
                                             │
                                             ▼
-                              /flowkit.pre-unify-check
+                              /flowkit.code-check
                                             │
                          ┌──────────────────┤
                          │                  │
+                      ❌ FAIL            ✅ PASS
+                         │                  │
                          ▼                  ▼
-              /flowkit.refine-loop    /flowkit.trace
-              （小幅調整時使用）              │
+              /flowkit.refine-loop    /flowkit.pre-unify-check
+              （修復後重跑                     │
+               code-check）                  │
+                         │                  ▼
+                         │        /flowkit.trace
                          │                  │
                          │                  ▼
                          │      /flowkit.requirement-sync
@@ -239,6 +245,7 @@
 - `tasks.md` 存在且包含 T### 格式任務
 - `src/` 與 `tests/` 有對應實作
 - 使用者輸入非空白
+- 若 `.artifacts/code-check-report-feature-*.md` 存在，讀取作為問題來源參考
 
 **產出**：`context.json`
 ```json
@@ -274,6 +281,7 @@
 - 新增 User Stories > 5
 - Change Set 總數 > 6
 - 涉及架構性變更
+- 涉及檔案數 > 20
 
 ### Phase 2：Progressive Scan
 
@@ -411,6 +419,7 @@ def login(email: str, password: str) -> bool:
 - [ ] 無 TODO/FIXME 殘留於程式碼
 - [ ] 新增/修改的程式碼包含 @spec 註解（維持 Traceability）
 - [ ] （若 Feature 有 traceability-index.md）建議執行 `/flowkit.trace` 更新追溯索引
+- [ ] 建議重跑 `/flowkit.code-check` 驗證修復結果
 ```
 
 ---
@@ -564,6 +573,9 @@ def login(email: str, password: str) -> bool:
 
 | 版本 | 日期 | 變更說明 |
 |------|------|----------|
+| 1.5.0 | 2026-02-16 | Bug-Fix 模式：`--default` 新增 bug-fix-list 優先讀取、Phase 0 自動切換 Bug-Fix 模式、支援 code-check 非功能回歸分流 |
+| 1.4.0 | 2026-02-08 | 報告命名統一：`verify-report-feature-*` → `code-check-report-feature-*` |
+| 1.3.0 | 2026-02-03 | Handoff 重構（移除 trace、新增 code-check + pre-unify-check）、--default 模式、Phase 0 整合 code-check 報告、Scope 檔案數門檻 |
 | 1.2.0 | 2026-01-25 | 初始文件版本 |
 
 ---
@@ -572,7 +584,7 @@ def login(email: str, password: str) -> bool:
 
 | 類型 | 位置 |
 |------|------|
-| Agent 指令檔 | `flowkit/agents/flowkit.refine-loop.agent.md` |
+| Agent 指令檔 | `.github/agents/flowkit.refine-loop.agent.md` |
 | Refine 產物 | `FEATURE_DIR/.refine/RC<NNN>/` |
 | 本功能說明 | `flowkit/docs/功能說明-flowkit.refine-loop.md` |
 
@@ -588,7 +600,7 @@ def login(email: str, password: str) -> bool:
 | 使用 logging | 禁止 print |
 | **@spec 註解** | 新增/修改的程式碼必須包含 `@spec US{N}` 註解（維持 Traceability） |
 | 驗證上限 | 最多 3 次迭代 |
-| Scope 門檻 | [NEW] > 5 或 RC > 6 或架構性變更 → STOP |
+| Scope 門檻 | [NEW] > 5 或 RC > 6 或架構性變更 或涉及檔案數 > 20 → STOP |
 | 單一真相 | Phase 8 合併後，主檔為唯一權威 |
 | 先掃描再深讀 | Stage 1 結構 → Stage 2 內容 |
 | 深讀必記錄 | 每次深讀寫入 Escalation Log |

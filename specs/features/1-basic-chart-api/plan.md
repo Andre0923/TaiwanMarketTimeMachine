@@ -1,0 +1,200 @@
+# Implementation Plan: 基礎繪圖與 API 格式
+
+> **Feature ID**: 001-basic-chart-api  
+> **Plan Version**: 1.0  
+> **Created**: 2026-02-04  
+> **Spec Reference**: [spec.md](./spec.md)
+
+---
+
+## 1. Technical Context
+
+### 1.1 Current State Analysis
+
+| 組件 | 現狀 | 目標狀態 | 落差等級 |
+|------|------|----------|----------|
+| <!-- 組件名稱 --> | <!-- 現況 --> | <!-- 目標 --> | <!-- CRITICAL/HIGH/MEDIUM/LOW --> |
+
+### 1.2 Technology Stack
+
+| 項目 | 技術選擇 | 理由 |
+|------|----------|------|
+| <!-- 項目 --> | <!-- 技術 --> | <!-- 選擇原因 --> |
+
+### 1.3 Affected Files
+
+**新增檔案**：
+```
+<!-- 列出要新增的檔案路徑 -->
+```
+
+**修改檔案**：
+```
+<!-- 列出要修改的檔案路徑 -->
+```
+
+---
+
+## 2. UI/UX Plan
+
+> 本區塊規劃 UI 文件更新任務，確保 implement 前所有 UI 定義達 L1。
+> 若 UI Impact = None，此區塊可標記「N/A」或移除。
+
+### 2.1 UI Impact Summary
+
+| 項目 | 值 |
+|------|---|
+| **UI Impact** | <!-- 承接 spec：None / Low / High --> |
+| **Current Maturity** | <!-- L0 / L1 --> |
+| **Target Maturity** | <!-- L0 / L1 --> |
+
+### 2.2 UI Discovery Tasks（若 Target = L1 且目前 = L0）
+
+- [ ] 定義 Global States（loading/empty/error）規則
+- [ ] 定義不可逆操作 confirmation policy
+- [ ] 補齊 Screen/Flow catalog
+
+### 2.3 受影響畫面
+
+| UI ID | 畫面名稱 | 當前 Maturity | 目標 Maturity | 變更類型 |
+|-------|----------|---------------|---------------|----------|
+| <!-- [UI-SCR-###] --> | <!-- 名稱 --> | <!-- L0 --> | <!-- L1 --> | <!-- 新增/補齊/修改 --> |
+
+### 2.4 新增 Pattern/State
+
+| UI ID | 類型 | 說明 |
+|-------|------|------|
+| <!-- [UI-PAT-###] --> | Pattern | <!-- 說明 --> |
+| <!-- [UI-STATE-###] --> | State | <!-- 說明 --> |
+
+### 2.5 UI 文件更新任務
+
+- [ ] 更新 `ui-structure.md`（若新增 Screen/Component）
+- [ ] 更新 `ux-guidelines.md`（若新增 Pattern/State）
+- [ ] 分配 UI ID 給所有 `[UI-TBD]` 項目
+- [ ] 確認所有 UI ID 達 L1
+- [ ] Decision Log 有記錄（若有爭議或例外）
+
+---
+
+## 3. Constitution Compliance Check
+
+> 以下為 Plan 階段必須檢查的固定清單。每次執行 Plan 時 MUST 逐條填寫狀態。
+
+### 3.1 NON-NEGOTIABLE Requirements (🔴)
+
+| 條款 | 要求 | 本計畫對應 | 狀態 |
+|------|------|------------|------|
+| §1.1 | SDD 方法論 - spec.md 已完成，plan → tasks 順序正確 | | ⬜ |
+| §1.2 | 目錄結構 - 符合 SDD 目錄規範 | | ⬜ |
+| §1.2 | 測試產物 - 所有測試產物（coverage、pytest cache 等）輸出至 `.artifacts/` | | ⬜ |
+| §3.1 | TDD/BDD Flow - 規劃包含測試任務（先測試後實作） | | ⬜ |
+| §3.2 | Observability - Section 5 已說明 logging 策略 | | ⬜ |
+| §5.1 | 文件一致性 - 規劃包含文件更新任務 | | ⬜ |
+| §6.1 | 不確定性處理 - 無未解決的 TODO/??? 或已記錄於 research.md | | ⬜ |
+
+### 3.2 條件性檢查 (🟡)
+
+> 根據專案/Feature 特性選擇性填寫，不適用請標記 N/A
+
+| 條款 | 觸發條件 | 要求 | 本計畫對應 | 狀態 |
+|------|----------|------|------------|------|
+| §1.4 | UI Impact ≠ None | UI Maturity 規劃達 L1 | | ⬜/N/A |
+| §3.6 | UI Impact ≠ None | AC 定義 Loading/Empty/Error 狀態 | | ⬜/N/A |
+| §5.2 | Python 專案 | 使用 uv 作為環境管理工具 | | ⬜/N/A |
+
+### 3.3 狀態標註說明
+
+| 標註 | 意義 |
+|------|------|
+| ⬜ | 待填寫 |
+| ✅ | 符合 |
+| ❌ | 不符合（需說明原因或補救措施） |
+| N/A | 不適用（需說明為何不適用） |
+
+---
+
+## 4. Detailed Design
+
+### 4.1 Module: [模組名稱] (對應 US?)
+
+**目標**：<!-- 模組目標 -->
+
+**設計決策**：
+
+| 項目 | 決策 | 理由 |
+|------|------|------|
+| <!-- 項目 --> | <!-- 決策 --> | <!-- 理由 --> |
+
+**實作方式**：
+```
+<!-- 描述實作方式或虛擬碼 -->
+```
+
+---
+
+## 5. Observability & Logging（Constitution §3.2）🔴
+
+> **此區塊為必填**：依據憲法 §3.2，所有 plan.md MUST 說明 logging 策略。
+
+### 5.1 本次變更是否涉及自動化流程？
+
+- [ ] **是** — 需填寫以下內容
+- [ ] **否** — 請說明原因：<!-- 例如：純 UI 樣式調整、文件更新 -->
+
+### 5.2 Logging 策略
+
+| 項目 | 說明 |
+|------|------|
+| **使用的 Logger 模組** | <!-- 例如：src/logger.py --> |
+| **預期新增的 Log Event** | <!-- 例如：job_start, job_end, job_error --> |
+| **Log Level 使用方式** | <!-- 例如：INFO 記錄流程起訖，ERROR 記錄例外 --> |
+| **是否需擴充 Log Event 定義** | <!-- 是/否，若是請說明 --> |
+
+### 5.3 對應 System Design 檢查
+
+- [ ] 已確認 `specs/system/flows.md` 的 logging 描述（如有）
+- [ ] 本次變更 **不影響** / **需更新** `specs/system/data-model.md` 的 Log Event 定義
+
+---
+
+## 6. Risk Assessment
+
+| 風險 | 可能性 | 影響 | 緩解措施 |
+|------|--------|------|----------|
+| <!-- 風險描述 --> | 高/中/低 | 高/中/低 | <!-- 緩解方式 --> |
+
+---
+
+## 7. Test Strategy
+
+### 7.1 驗證方式
+
+| 組件 | 驗證方式 |
+|------|----------|
+| <!-- 組件 --> | <!-- 驗證方法 --> |
+
+### 7.2 成功標準
+
+- [ ] <!-- 成功標準 1 -->
+- [ ] <!-- 成功標準 2 -->
+
+---
+
+## 8. Implementation Checklist
+
+### Phase 1: [階段名稱]
+- [ ] <!-- 任務 1 -->
+- [ ] <!-- 任務 2 -->
+
+### Phase 2: [階段名稱]
+- [ ] <!-- 任務 1 -->
+- [ ] <!-- 任務 2 -->
+
+---
+
+## 9. Appendix
+
+### A. 參考資料
+
+<!-- 相關文件、連結 -->

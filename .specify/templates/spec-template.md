@@ -1,6 +1,7 @@
 ---
 milestone: null
 system_context: false
+status: Draft  # 允許值: Draft | In Progress | Implemented | Unified
 created: {DATE}
 updated: {DATE}
 ---

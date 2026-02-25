@@ -3,7 +3,7 @@
 > **用途**：在 Plan 階段完成後，檢查 Feature Plan 與現有系統的非意圖性衝突  
 > **觸發時機**：`/speckit.plan` 完成後、`/speckit.tasks` 執行前  
 > **套件**：FlowKit  
-> **版本**：1.0.0
+> **版本**：1.1.0
 
 ---
 
@@ -13,7 +13,9 @@
 $ARGUMENTS
 ```
 
-在繼續執行之前，您**必須（MUST）**考慮使用者輸入（若非空白）。
+> 💡 **`--default` 模式**：輸入 `--default` 等同於無額外指示，直接執行預設流程。
+
+在繼續執行之前，您**必須（MUST）**考慮使用者輸入（若非空白或 `--default`）。
 
 ---
 
@@ -132,6 +134,12 @@ $ARGUMENTS
    | **全新功能** | Spec 無「修改」標記，純新增 | 跳過部分複用檢查 |
    | **修改功能** | Spec 有「修改」或「刪除」標記 | 完整檢查 |
    | **重構** | Spec 聲明為重構類型 | 強化架構檢查 |
+   | **Bugfix / Tech Debt** | Spec 來源為 TD Registry 或 system-health；Feature ID 關聯 bugfix/tech-debt Milestone | 調整 A 類通道（Change Set 排除）、放寬 C 類 UI 檢查（見 Phase 3） |
+
+   **Bugfix / Tech Debt 判斷依據**（滿足任一）：
+   - Feature spec.md 的 `milestone` 欄位對應 Bugfix 類型 Milestone
+   - Feature 名稱包含 `bugfix`、`tech-debt`、`hotfix` 等關鍵字
+   - Feature Overview 明確聲明為修復/品質改善性質
 
 **輸出**：Feature 類型、檢查範圍確認
 
@@ -209,6 +217,18 @@ $ARGUMENTS
 
 #### A. 重複實作檢查
 
+**Feature Artifact 為 Change Set 排除規則**：
+
+Feature-level 的 `contracts/`、`data-model.md` 在 SDD 架構中本質上是 System-level 同名文件的「差異描述（Delta）」。在比對前 MUST 先套用此排除規則：
+
+| 條件 | 判定 |
+|------|------|
+| Feature contracts/ 描述的端點在 System contracts/ 已存在 | ✅ 意圖內（Change Set），不視為重複 |
+| Feature data-model.md 的 Entity 在 System data-model.md 已存在 | ✅ 意圖內（Change Set），不視為重複 |
+| Feature 新增了 System 中不存在的全新端點或 Entity | ⚠️ 需進一步檢查是否為意圖 |
+
+> **適用所有 Feature 類型**（不限 Bugfix）：此規則反映 SDD 三層架構的基本運作方式 — Feature Artifacts 與 System 重疊不是「重複」，而是「差異描述」。
+
 | ID | 檢查項目 | 說明 | 嚴重性 |
 |----|----------|------|--------|
 | A1 | 功能重複 | Plan 規劃的功能與現有功能高度相似 | HIGH |
@@ -228,6 +248,15 @@ $ARGUMENTS
 **全新功能時**：B1 仍適用（應使用共享服務），B2-B3 視情況標記 N/A。
 
 #### C. 非意圖變動檢查
+
+**C 類檢查：已知條件式模式排除**
+
+以下情況不視為「範圍溢出」，應降級處理：
+
+| 模式 | 說明 | 條件 |
+|------|------|------|
+| UI 任務條件式生成 | Plan 模板自動產生「若 implement 新增 UI 變更…」的 checkbox | 若 Feature UI Impact = None 或 Target = L0，降級為 INFO 而非 HIGH |
+| Feature Design Artifacts | Feature 在 plan.md 列出 `data-model.md`、`contracts/` 等新增檔案 | 若檔案位於 `specs/features/NNN-*/` 內，為正常行為 |
 
 | ID | 檢查項目 | 說明 | 嚴重性 |
 |----|----------|------|--------|

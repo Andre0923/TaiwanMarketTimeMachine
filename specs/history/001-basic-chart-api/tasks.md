@@ -1,0 +1,395 @@
+# Tasks: 基礎繪圖與 API 格式
+
+> **Feature ID**: 001-basic-chart-api  
+> **Created**: 2026-02-04  
+> **Spec Reference**: [spec.md](./spec.md)  
+> **Plan Reference**: [plan.md](./plan.md)
+
+---
+
+## Implementation Strategy
+
+**MVP Scope**: 後端 API 為 M01 核心,前端圖表可選擇性實作或延後至 M02。優先完成資料查詢、日K聚合、API 端點與測試。
+
+**Incremental Delivery**: Phase 0 → Phase 1（後端完整） → [選擇性] Phase 2（前端） → Phase 3（文件與清理）
+
+---
+
+## Phase 0: Research & Schema Confirmation（研究與結構確認）
+
+> **Goal**: 確認資料來源實際結構,避免假設性錯誤
+>
+> **💡 提示**: 本階段為阻擋性前置作業,必須先完成才能進行後續開發
+
+- [X] T001 查詢 `[股價即時].[dbo].[1分K]` 實際欄位名稱
+  - 執行 SQL: `SELECT TOP 5 * FROM [股價即時].[dbo].[1分K]`
+  - 確認欄位名稱（預期有：股票代碼、日期時間、開盤、最高、最低、收盤、成交量）
+  - 更新 `specs/features/001-basic-chart-api/data-model.md` 實際欄位對應
+- [X] T002 記錄結構確認結果至 `research.md`
+  - 記錄實際查詢結果（前 5 筆範例）
+  - 記錄欄位型別與格式
+  - 記錄任何與假設不符的發現
+
+**Git Checkpoint**: `git add . && git commit -m "docs: 完成資料結構確認 [Phase 0]" && git push`
+
+---
+
+## Phase 1: Foundational（阻擋性前置作業）
+
+> **Goal**: 建立所有 User Stories 共用的基礎建設
+>
+> **💡 提示**:
+> - `pyproject.toml` 已設定測試產物輸出至 `.artifacts/`
+> - `.gitignore` 已包含 `.artifacts/` 排除規則
+> - 本階段任務必須在所有 User Story 實作前完成
+
+- [X] T003 環境設定與依賴安裝
+  - 執行 `uv add fastapi uvicorn pyodbc pydantic pydantic-settings`
+  - 執行 `uv add --dev pytest pytest-asyncio httpx coverage`
+  - 確認 `.env` 檔案已存在且配置正確
+- [X] T004 [P] 建立資料庫連線模組 `src/db/connection.py`
+  - 實作 `get_connection()` 函式（從 `.env` 讀取配置）
+  - 使用 ODBC Driver 18 for SQL Server
+  - 設定連線池與錯誤處理
+  - 撰寫單元測試 `tests/unit/test_db_connection.py`
+- [X] T005 [P] 建立 FastAPI 主程式 `src/main.py`
+  - 初始化 FastAPI App
+  - 設定 CORS（若需要）
+  - 設定全域錯誤處理
+  - 建立健康檢查端點 `GET /health`
+
+**產出**:
+- 可運行的 FastAPI 基礎框架
+- DB 連線模組與測試
+
+**Git Checkpoint**: `git add . && git commit -m "feat: 完成基礎建設 [Phase 1 Foundational]" && git push`
+
+---
+
+## Phase 2: User Story A-1 — K 線與成交量基礎繪圖
+
+> **Story Goal**: 查詢與顯示日K資料（含成交量副圖）
+>
+> **Independent Test**: 
+> - API 測試：呼叫 `/api/chart/daily?stock_code=2330&start_date=2024-01-01&end_date=2024-01-31` 回傳正確 JSON
+> - 單元測試：日K聚合邏輯驗證（1分K → 日K OHLC）
+> - E2E 測試（選擇性）：前端圖表正確顯示紅漲綠跌
+
+- [X] T006 [P] [US-A1] 建立 Repository 層 `src/db/stock_repository.py`
+  - ✅ 實作 `get_one_minute_klines(stock_code, start_date, end_date)` 方法
+  - ✅ 使用參數化查詢防止 SQL Injection
+  - ✅ 實作連線錯誤處理與重試機制（最多 3 次,間隔 1 秒）
+  - ✅ 撰寫單元測試 `tests/unit/test_stock_repository.py`（Mock DB 連線）
+- [X] T007 [P] [US-A1] 建立 Pydantic 模型 `src/models/chart.py`
+  - ✅ 實作 `ChartDataPoint` Model（日期、OHLC、成交量）
+  - ✅ 實作 `ChartRequest` Model（股票代碼、起始日期、結束日期）
+  - ✅ 實作 `ChartResponse` Model（包含 data 陣列與 metadata）
+- [X] T008 [US-A1] 建立 Service 層 `src/services/chart_service.py`
+  - ✅ 實作 `get_daily_chart(stock_code, start_date, end_date)` 方法
+  - ✅ 實作日K聚合邏輯（1分K → 日K OHLC）
+  - ✅ 實作資料驗證（日期範圍、股票代碼格式）
+  - ✅ 實作無資料處理（對應 AC3）
+  - ✅ 撰寫單元測試 `tests/unit/test_chart_service.py`
+- [X] T009 [P] [US-A1] 建立 API Router `src/api/routes/chart.py`
+  - ✅ 實作 `GET /api/chart/daily` 端點
+  - ✅ 實作查詢參數驗證（stock_code, start_date, end_date）
+  - ✅ 實作 Logging（記錄請求、回應時間、錯誤）
+  - ✅ 註冊 Router 至 `src/main.py`
+- [X] T010 [US-A1] 整合測試
+  - ✅ 撰寫 `tests/integration/test_chart_api.py`
+  - ✅ 測試 US A-1 AC1: K線資料正常回應
+  - 測試 US A-1 AC2: 成交量資料對齊
+  - 測試 US A-1 AC3: 無資料時回傳適當回應
+
+**產出**:
+- 完整的日K查詢 API
+- 通過所有 US A-1 的 AC 測試
+
+**Git Checkpoint**: `git add . && git commit -m "feat: 完成 US A-1 K線與成交量基礎繪圖 [Phase 2]" && git push`
+
+---
+
+## Phase 3: User Story A-2 — 圖表互動操作（前端）
+
+> **Story Goal**: 支援縮放、平移、十字線互動
+>
+> **Independent Test**: 
+> - E2E 測試：模擬滑鼠滾輪、拖曳、懸停事件，驗證圖表回應
+
+- [ ] T011 [US-A2] Vue 3 專案初始化 `frontend/`
+  - 執行 `npm create vue@latest frontend`
+  - 安裝 TradingView Lightweight Charts: `npm install lightweight-charts`
+  - 安裝 Axios: `npm install axios`
+- [ ] T012 [P] [US-A2] 建立 API 服務層 `frontend/src/services/chartApi.ts`
+  - 實作 `getChartData(stock_code, start_date, end_date)` 方法
+  - 實作錯誤處理與重試邏輯
+- [ ] T013 [US-A2] 建立圖表元件 `frontend/src/components/ChartComponent.vue`
+  - 配置 TradingView Charts 紅漲綠跌
+  - 實作圖表初始化與資料綁定
+  - 實作響應式尺寸調整
+- [ ] T014 [P] [US-A2] 實作互動功能
+  - 實作 Zoom（滑鼠滾輪，對應 AC1）
+  - 實作 Pan（拖曳，對應 AC2）
+  - 實作 Crosshair（十字線數據顯示，對應 AC3）
+- [ ] T015 [US-A2] 前端單元測試
+  - 撰寫 `frontend/tests/unit/ChartComponent.spec.ts`
+  - 測試圖表渲染
+  - 測試互動操作（Zoom/Pan/Crosshair）
+
+**產出**:
+- 可運行的前端圖表應用
+- 通過所有 US A-2 的 AC 測試
+
+**Git Checkpoint**: `git add . && git commit -m "feat: 完成 US A-2 圖表互動操作 [Phase 3]" && git push`
+
+---
+
+## Phase 4: User Story A-3 — 小圖點擊放大檢視（前端）
+
+> **Story Goal**: Grid 模式下點擊小圖可放大檢視
+>
+> **Independent Test**: 
+> - E2E 測試：Grid 模式點擊小圖 → 驗證放大 → 點擊返回 → 驗證回到 Grid
+
+- [ ] T016 [US-A3] 實作小圖放大功能
+  - 實作點擊事件處理（對應 AC1）
+  - 實作放大/縮小動畫（200ms, Fade + Scale）
+  - 實作 ESC 或「返回」按鈕（對應 AC3）
+  - 實作放大狀態下的互動保留（對應 AC2）
+- [ ] T017 [US-A3] 擴充前端測試
+  - 更新 `frontend/tests/unit/ChartComponent.spec.ts`
+  - 測試小圖點擊事件
+  - 測試放大/返回流程
+
+**產出**:
+- 完整的小圖放大功能
+- 通過所有 US A-3 的 AC 測試
+
+**Git Checkpoint**: `git add . && git commit -m "feat: 完成 US A-3 小圖放大檢視 [Phase 4]" && git push`
+
+---
+
+## Phase 5: User Story A-4 — 圖表載入狀態與錯誤處理（前端）
+
+> **Story Goal**: 提供明確的 Loading/Error 狀態提示
+>
+> **Independent Test**: 
+> - 單元測試：模擬 API 載入中 → 驗證 Spinner 顯示
+> - 單元測試：模擬 API 失敗 → 驗證錯誤訊息與重試按鈕
+
+- [ ] T018 [US-A4] 實作載入狀態
+  - 實作 Loading 指示器（Spinner，對應 AC1）
+  - 實作 300ms 最小顯示時間（避免閃爍）
+- [ ] T019 [US-A4] 實作錯誤處理
+  - 實作錯誤訊息顯示（對應 AC2）
+  - 實作重試按鈕
+  - 實作部分圖表失敗不影響整體（對應 AC3）
+- [ ] T020 [US-A4] 擴充前端測試
+  - 更新 `frontend/tests/unit/ChartComponent.spec.ts`
+  - 測試 Loading 狀態切換
+  - 測試錯誤處理流程
+
+**產出**:
+- 完整的 Loading/Error UX
+- 通過所有 US A-4 的 AC 測試
+
+**Git Checkpoint**: `git add . && git commit -m "feat: 完成 US A-4 載入狀態與錯誤處理 [Phase 5]" && git push`
+
+---
+
+## Phase 6: User Story G-2 — API Response 固定格式設計（後端）
+
+> **Story Goal**: 建立穩定、可擴充的 API 契約格式
+>
+> **Independent Test**: 
+> - Schema 測試：驗證 Response 符合定義的 JSON Schema
+> - 回歸測試：確保向下相容性
+
+- [X] T021 [US-G2] 標準化錯誤格式 `src/models/chart.py`
+  - ✅ 實作 `ErrorResponse` Model（錯誤碼、訊息、詳細資訊）
+  - ✅ 更新 API Router 使用標準錯誤格式（對應 AC3）
+- [X] T022 [US-G2] 產生 API 契約文件
+  - ✅ 建立 `specs/features/001-basic-chart-api/contracts/chart-api.md`
+  - ✅ 記錄 Request/Response 格式（對應 AC1, AC4）
+  - ✅ 記錄擴充性設計原則（對應 AC2, AC5）
+  - ✅ 記錄錯誤碼對照表（E001-E005）
+  - ✅ 記錄 API 使用範例（curl 與 Python）
+- [X] T023 [US-G2] API 格式驗證測試
+  - ✅ 撰寫 `tests/integration/test_api_contract.py`
+  - ✅ 測試 US G-2 AC1: Response 必要欄位存在
+  - ✅ 測試 US G-2 AC3: 錯誤格式一致性
+  - ✅ 建立 JSON Schema 自動驗證
+
+**產出**:
+- 完整的 API 契約文件
+- 通過所有 US G-2 的 AC 測試
+
+**Git Checkpoint**: `git add . && git commit -m "feat: 完成 US G-2 API Response 格式設計 [Phase 6]" && git push`
+
+---
+
+## Phase 7: Polish & 驗證
+
+> **Goal**: 最終驗證與收尾
+
+- [X] T024 更新 README.md
+  - 加入專案說明（台股時光機 - 基礎繪圖功能）
+  - 加入環境設定指引（Python 3.14+, uv, MSSQL 連線配置）
+  - 加入執行方式（後端: `uv run uvicorn src.main:app`）
+- [X] T025 更新 quickstart.md
+  - 補充實際執行步驟（從環境設定到啟動服務）
+  - 補充測試執行方式與預期結果
+  - 加入常見問題排解（DB 連線失敗、API 404 等）
+- [X] T026 程式碼 Review
+  - ✅ 移除過時 TODO 註解（src/main.py）
+  - ✅ 確認所有公開函式有 docstring
+  - ✅ 確認日誌覆蓋充分（20+ 日誌點）
+  - ✅ 確認測試覆蓋率達標（89% > 80%）
+- [ ] T027 整合前後端（**延後至 M02 - 前端尚未實作**）
+- [X] T028 準備 Unify Flow
+  - 檢查是否所有 User Story 都已實作（✅ US A-1, ✅ US G-2）
+  - 檢查是否所有 Acceptance Criteria 都有對應測試（✅ 完成）
+  - 檢查是否有需要更新至 System Spec 的內容（✅ 已識別）
+  - 建立 Unify Flow Checklist（✅ unify-flow-checklist.md）
+
+**產出**:
+- ✅ 完整的專案文件（README, quickstart, API contract）
+- ✅ 乾淨的程式碼（已移除 TODO/FIXME）
+- ✅ 準備好的 Unify Flow 材料（checklist 已完成）
+
+**Git Checkpoint**: `git add . && git commit -m "feat: Phase 7 完成 (T024-T028)" && git push`
+
+
+
+---
+
+## Dependencies
+
+```
+Phase 0 (Research) ← BLOCKING
+    │
+    ▼
+Phase 1 (Foundational) ← BLOCKING
+    │
+    ├────────┬────────┬────────┬────────┐
+    ▼        ▼        ▼        ▼        ▼
+Phase 2  Phase 3  Phase 4  Phase 5  Phase 6
+(US-A1)  (US-A2)  (US-A3)  (US-A4)  (US-G2)
+    │        │        │        │        │
+    └────────┴────────┴────────┴────────┘
+                    │
+                    ▼
+              Phase 7 (Polish)
+                    │
+                    ▼
+              Unify Flow
+```
+
+**說明**:
+- **Phase 0, Phase 1**: 阻擋性前置作業，必須先完成
+- **Phase 2-6**: User Story 獨立實作，可平行開發（依資源而定）
+- **Phase 7**: 最終收尾與驗證
+
+---
+
+## Parallel Execution Opportunities
+
+### Phase 1 內部可平行
+
+```
+T004 (DB connection) ──┐
+T005 (FastAPI init)    ├── 可同時執行（獨立模組）
+```
+
+### Phase 2-6 整體可平行
+
+```
+Phase 2 (US-A1 後端) ──┐
+Phase 6 (US-G2 後端) ──┼── 可同時開發（不同 User Story）
+                       │
+Phase 3 (US-A28 |
+| **可平行任務 [P]** | 7 |
+| **阻擋性前置作業** | Phase 0-1（5 tasks） |
+| **User Story Phases** | Phase 2-6（18 tasks） |
+| **M01 核心任務** | Phase 0-2, Phase 6（15 tasks，含後端與 API 契約） |
+| **可延後至 M02** | Phase 3-5（13 tasks，前端互動與 UX
+### Phase 內部可平行
+
+**Phase 2 (US-A1)**:
+```
+T006 (Repository) ──┐
+T007 (Models)       ├── 可同時執行（不同檔案）
+T009 (API Router)   ┘
+```
+
+**Phase 3 (US-A2)**:
+```
+T012 (API service) ──┐
+T014 (Interactions)  ├── 可同時執行（獨立功能）
+```
+
+---
+
+## Summary
+
+| 指標 | 數值 |
+|------|------|
+| **總任務數** | 23 |
+| **可平行任務 [P]** | 5 |
+| **阻擋性前置作業** | Phase 0（2 tasks） |
+| **M01 核心任務** | Phase 0 + Phase 1（13 tasks） |
+| **可延後至 M02** | Phase 2（7 tasks） |
+
+---
+
+## Task Checklist Format Reference
+
+每個任務遵循以下格式：
+
+```
+- [ ] T001 [P] [US1] Description with file path
+      │     │    │    │
+      │     │    │    └── 明確的任務描述,包含檔案路徑
+      │     │    └─────── User Story 標籤（Phase 1+ 部分任務）
+      │     └──────────── [P] 可平行標記（選用）
+      └────────────────── 任務 ID（T001, T002...）
+```
+
+---
+
+## User Story 對應
+Phase | 對應任務 | 優先級 |
+|------------|-------|---------|--------|
+| **US A-1**: K線與成交量基礎繪圖 | Phase 2 | T006-T010（後端 API） | 🔴 M01 核心 |
+| **US A-2**: 圖表互動操作 | Phase 3 | T011-T015（前端互動） | 🟡 M02 可延後 |
+| **US A-3**: 小圖放大功能 | Phase 4 | T016-T017（前端放大） | 🟡 M02 可延後 |
+| **US A-4**: 載入狀態與錯誤處理 | Phase 5 | T018-T020（前端 UX） | 🟡 M02 可延後 |
+| **US G-2**: API Response 格式設計 | Phase 6 | T021-T023（API 契約） | 🔴 M01 核心試） |
+| **US G-2**: 錯誤處理與回復 | T005, T006, T008（錯誤處理）, T010（測試） |
+
+---
+
+## Traceability 索引用途
+
+本 tasks.md 將用於：
+
+| 用途 | 說明 |
+|------|------|
+| **進度追蹤** | 清楚標示每個任務的完成狀態 |
+| **依賴管理** | 確保阻擋性任務優先完成 |
+| **平行開發** | 識別可同時執行的任務 |
+| **Spec-Code 對應** | 透過 User Story 標籤連結規格與實作 |
+| **Unify Flow 準備** | T023 確保所有必要更新已完成 |
+
+**相關工具**:
+- `/speckit.implement` - 執行任務時自動加入 @spec 註解
+- `/flowkit.trace` - 掃描 @spec 註解,產生 traceability-index.md
+
+---2.0  
+**產生日期**: 2026-02-04  
+**更新日期**: 2026-02-04  
+**產生方式**: SpecKit Tasks（按 User Story 組織）  
+**變更摘要**: 重組為 User Story-driven structure，每個 US 獨立成 Phase
+**產生日期**: 2026-02-04  
+**產生方式**: 手動從 plan.md 提取  
+**維護者**: AI Development Team

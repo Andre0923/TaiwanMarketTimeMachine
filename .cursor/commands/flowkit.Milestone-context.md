@@ -14,6 +14,8 @@
 $ARGUMENTS
 ```
 
+> 💡 **`--default` 模式**：輸入 `--default` 等同於 `--milestone`（不指定編號），自動取 `docs/requirements/Milestone/` 目錄下編號最大的 Milestone。
+
 ### 輸入解析規則
 
 AI MUST 支援**雙軌輸入**：CLI 風格與自然語言皆可。
@@ -411,8 +413,8 @@ IF PRD 檔案不存在:
 
    | PRD 擷取項目 | 類別 | System 候選比對 |
    |--------------|------|-----------------|
-   | LINE_目標對象 表 | DM | data-model.md Entity |
-   | LINE_訊息紀錄 表 | DM | data-model.md Entity |
+   | User_Account 表 | DM | data-model.md Entity |
+   | Order_Record 表 | DM | data-model.md Entity |
    | 閒置偵測流程 | FL | flows.md Flow |
    | 主畫面設計 | UI | ui/*.md Screen |
 

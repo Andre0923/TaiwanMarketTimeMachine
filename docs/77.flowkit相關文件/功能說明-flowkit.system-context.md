@@ -85,6 +85,18 @@ AI 獲得最新的專案上下文
 
 ## 使用方式
 
+### `--default` 模式
+
+> 📝 詳細說明請參考 [功能說明-default-mode.md](./功能說明-default-mode.md)
+
+```bash
+# GitHub Copilot Agent 模式
+@workspace /flowkit.system-context --default
+
+# 等同於
+/flowkit.system-context
+```
+
 ### CLI 風格
 
 ```bash

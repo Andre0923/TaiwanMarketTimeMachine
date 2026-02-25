@@ -79,6 +79,22 @@ docs/76.改版歷史/
 - AI 不得以「程式碼現況」推翻 spec
 - AI 不得從 `specs/history/` 推導現行行為
 
+### 2.3 Spec 修訂標記規範
+
+當 Feature spec.md 中的 US / AC 在 `specify` 之後被修改（例如 analyze 建議調整、實作中發現需求變更），SHOULD 在修改項目加上變更標記：
+
+| 標記 | 用途 | 範例 |
+|------|------|------|
+| `[MODIFIED]` | 修改既有 US/AC | `### US A-1: 使用者登入 [MODIFIED]` |
+| `[NEW]` | 新增 US/AC | `### US A-3: 密碼重設 [NEW]` |
+| `[DELETED]` | 刪除 US/AC | `### US A-2: 舊版登入 [DELETED]` |
+
+**規則**：
+- 標記放在標題末尾或區段首行
+- `flowkit.requirement-sync` 依賴此標記判斷「刻意修正」，無標記的差異會被詢問確認
+- `flowkit.refine-loop` 會自動管理標記（Phase 3 產生、Phase 8 合併後移除）
+- Unify Flow 完成後，spec.md 中不得殘留變更標記
+
 ---
 
 ## 3. System Spec 保護 🔴 CRITICAL
@@ -263,7 +279,7 @@ debug / Bug Fix 時，盡可能使用**refine-loop**，若沒有使用時請依�
 
 ## 12. Git 提交規範
 
-### 12.1 提交時機（MUST）
+### 12.1 必須（MUST）提交時機
 
 **階段性完成**，例如： 完成 Phase階段、Unify Flow、Bug Fix
 
@@ -316,6 +332,66 @@ debug / Bug Fix 時，盡可能使用**refine-loop**，若沒有使用時請依�
 
 ### 13.3 禁止指令
 `pip`, `python -m venv`, `pipenv`, `conda`, `poetry`, `pipx`
+
+---
+
+## 13.5. Dropbox / 雲端同步環境特殊處理 🟡
+
+> 僅適用於專案位於 Dropbox、OneDrive、Google Drive 等雲端同步目錄
+
+### 13.5.1 檔案操作重試機制（SHOULD）
+
+當專案位於雲端同步目錄時，SHOULD 實作重試機制以處理檔案占用問題：
+
+```powershell
+function Invoke-WithRetry {
+    param(
+        [scriptblock]$ScriptBlock,
+        [int]$MaxRetries = 3,
+        [int]$RetryDelaySeconds = 2,
+        [string]$OperationName = "操作"
+    )
+    
+    $attempt = 0
+    while ($attempt -lt $MaxRetries) {
+        $attempt++
+        try {
+            & $ScriptBlock
+            return
+        }
+        catch {
+            if ($attempt -lt $MaxRetries) {
+                Write-Host "⚠️ $OperationName 失敗（嘗試 $attempt/$MaxRetries），等待 $RetryDelaySeconds 秒..." -ForegroundColor Yellow
+                Start-Sleep -Seconds $RetryDelaySeconds
+            }
+            else { throw }
+        }
+    }
+}
+
+# 使用範例
+Invoke-WithRetry -OperationName "刪除檔案" -ScriptBlock {
+    Remove-Item -Path $path -Recurse -Force
+}
+```
+
+### 13.5.2 遷移腳本注意事項
+
+- `migrate-to-full-kit.ps1` 已內建重試機制
+- 預設重試 3 次，每次間隔 2 秒
+- 若仍失敗，建議暫停雲端同步後重試
+
+### 13.5.3 臨時目錄建議
+
+遷移時 MAY 使用非同步目錄作為範本暫存位置：
+```powershell
+# 不建議：使用同步目錄
+git clone https://github.com/repo.git temp-template
+
+# 建議：使用本機暫存目錄
+$tempPath = "$env:TEMP\speckit-template-$(Get-Date -Format 'yyyyMMddHHmmss')"
+git clone https://github.com/repo.git $tempPath
+```
 
 ---
 

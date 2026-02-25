@@ -25,11 +25,22 @@ handoffs:
 $ARGUMENTS
 ```
 
-You **MUST** consider the user input before proceeding (if not empty).
+> 💡 **`--default` 模式**：輸入 `--default` 時，AI 會自動尋找 `docs/requirements/Milestone/` 目錄下編號最大的 `MNN-*.md` 檔案，並讀取其內容作為 Feature 描述輸入。
+
+You **MUST** consider the user input before proceeding (if not empty or `--default`).
 
 ## Outline
 
 The text the user typed after `/speckit.specify` in the triggering message **is** the feature description. Assume you always have it available in this conversation even if `$ARGUMENTS` appears literally below. Do not ask the user to repeat it unless they provided an empty command.
+
+### `--default` 模式處理
+
+**IF** `$ARGUMENTS` 為 `--default` 或空白：
+1. 掃描 `docs/requirements/Milestone/` 目錄，尋找所有 `MNN-*.md` 檔案（排除 `*-context.md`）
+2. 依編號排序，取編號最大的 Milestone 檔案（例：`M03-Feature.md` > `M02-Feature.md`）
+3. 讀取該檔案內容作為 Feature 描述輸入
+4. 自動設定 `milestone: MNN` 於 YAML frontmatter
+5. **IF** 找不到任何 Milestone 檔案：ERROR "找不到 Milestone 檔案，請先執行 /flowkit.BDD-Milestone 建立 Milestone"
 
 Given that feature description, do this:
 
@@ -52,25 +63,24 @@ Given that feature description, do this:
       git fetch --all --prune
       ```
    
-   b. Find the highest feature number across all sources for the short-name:
-      - Remote branches: `git ls-remote --heads origin | grep -E 'refs/heads/[0-9]+-<short-name>$'`
-      - Local branches: `git branch | grep -E '^[* ]*[0-9]+-<short-name>$'`
-      - Specs directories: Check for directories matching `specs/features/[0-9]+-<short-name>`
+   b. Find the highest feature number across **all four sources** (regardless of short-name):
+      - Remote branches: `git ls-remote --heads origin` — extract all `[0-9]+` prefixes
+      - Local branches: `git branch -a` — extract all `[0-9]+` prefixes
+      - `specs/features/` directories: all `[0-9]+-*` directory names
+      - `specs/history/` directories: all `[0-9]+-*` directory names (← unify-flow 會將完成的 Feature 移入 history)
    
    c. Determine the next available number:
-      - Extract all numbers from all three sources
-      - Find the highest number N
-      - Use N+1 for the new branch number
+      - Find the highest number N across all four sources
+      - Use N+1 for the new feature number
    
    d. Run the script `.specify/scripts/powershell/create-new-feature.ps1 -Json "$ARGUMENTS"` with the calculated number and short-name:
-      - Pass `--number N+1` and `--short-name "your-short-name"` along with the feature description
-      - Bash example: `.specify/scripts/powershell/create-new-feature.ps1 -Json "$ARGUMENTS" --json --number 5 --short-name "user-auth" "Add user authentication"`
-      - PowerShell example: `.specify/scripts/powershell/create-new-feature.ps1 -Json "$ARGUMENTS" -Json -Number 5 -ShortName "user-auth" "Add user authentication"`
+      - Pass `-Number N+1` and `-ShortName "your-short-name"` along with the feature description
+      - PowerShell example: `.specify/scripts/powershell/create-new-feature.ps1 -Json -Number 5 -ShortName "user-auth" "Add user authentication"`
    
    **IMPORTANT**:
-   - Check all three sources (remote branches, local branches, specs directories) to find the highest number
-   - Only match branches/directories with the exact short-name pattern
-   - If no existing branches/directories found with this short-name, start with number 1
+   - Check all four sources (remote branches, local branches, specs/features/, specs/history/) to find the highest number
+   - Match ALL feature numbers regardless of short-name — feature numbers are globally unique
+   - The script also performs this calculation internally; passing `-Number` overrides the auto-detection
    - You must only ever run this script once per feature
    - The JSON is provided in the terminal as output - always refer to it to get the actual content you're looking for
    - The JSON output will contain BRANCH_NAME and SPEC_FILE paths
@@ -101,6 +111,18 @@ Given that feature description, do this:
      - Read `specs/system/ui/ux-guidelines.md` for Pattern/State IDs (headers only)
    - **IF NOT EXISTS**: Mark `[UI-TBD: description]` for any UI-related AC
    - This step is non-blocking; missing UI files should not stop the specify flow
+
+5.5. **Load TD Context & TD Ref 標註 (Optional)**:
+   - **IF EXISTS**: `docs/technical-debt.md`
+     - 讀取 Active Items 表格，提取所有 Open / In Progress 的 TD 項目（ID、標題、Component）
+     - 在後續撰寫 US/AC 時，若某個 US 與現有 Open TD 相關（直接修復、附帶解決、或部分緩解），SHOULD 在 US 標題下方加上：
+       ```markdown
+       ### US X-N: 修正某某問題
+       > TD Ref: TD-XXX
+       ```
+     - 此規則適用於所有 Feature（含 bugfix、enhancement、new feature），不限於 Bugfix Milestone
+   - **IF NOT EXISTS**: 跳過（專案尚未建立 TD Registry）
+   - This step is non-blocking; missing TD registry should not stop the specify flow
 
 6. Follow this execution flow:
 

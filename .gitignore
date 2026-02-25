@@ -26,6 +26,9 @@ venv/
 ENV/
 env/
 
+# 環境變數（敏感資訊）
+.env
+
 # 日誌
 logs/
 *.log
@@ -47,6 +50,9 @@ htmlcov/
 # 測試與分析產物（Constitution §1.2）
 # 所有測試產物統一輸出至此目錄
 .artifacts/
+
+# 遷移備份（migrate-to-full-kit.ps1 產生）
+.migration-backup-*/
 
 # 系統
 .DS_Store

@@ -1,7 +1,7 @@
 # FlowKit Pre-Unify Check 功能說明
 
 > **指令名稱**：`/flowkit.pre-unify-check`  
-> **Agent 檔案**：`flowkit/agents/flowkit.pre-unify-check.agent.md`  
+> **Agent 檔案**：`.github/agents/flowkit.pre-unify-check.agent.md`  
 > **前置指令**：`/flowkit.consistency-check`（Plan 階段）
 
 ---
@@ -45,6 +45,9 @@
                  /speckit.tasks → /speckit.implement
                                             │
                                             ▼
+                              /flowkit.code-check
+                                            │
+                                            ▼
                               /flowkit.pre-unify-check ◄── 在此執行
                                             │
                                     ┌───────┴───────┐
@@ -70,6 +73,17 @@
 | `tasks.md` 存在 | RECOMMENDED | 用於完成度檢查 |
 | 程式碼已實作 | RECOMMENDED | 用於對齊檢查 |
 | System Spec 存在 | REQUIRED | 用於引用驗證 |
+
+### 2.3 `--default` 模式
+
+> 📝 **詳細說明**：請參考 [功能說明-default-mode.md](./功能說明-default-mode.md)
+
+```bash
+# GitHub Copilot Agent 模式
+@workspace /flowkit.pre-unify-check --default
+```
+
+使用 `--default` 時，指令會自動偵測當前工作的 Feature 目錄，並載入相關上下文執行檢查。
 
 ---
 
@@ -120,6 +134,27 @@
 | TR1 | User Story 覆蓋率 | MEDIUM | 每個 US 有對應檔案 |
 | TR2 | AC 覆蓋率 | LOW | 每個 AC 有對應測試 |
 | TR3 | @spec 註解一致性 | MEDIUM | 程式碼註解與 tasks.md 一致 |
+
+#### Phase 3.5：Spec Delta Log 交叉比對（條件觸發）
+
+> ℹ️ **v1.2.0 新增**：跨階段變更追蹤機制的一部分
+
+**觸發條件**：Feature spec.md YAML frontmatter 存在 `implement_baseline_commit` 欄位
+
+**執行步驟**：
+
+1. **取得 Git Diff**：`git diff <baseline>..HEAD -- FEATURE_DIR/`
+2. **解析變更清單**：從 diff 產出的「spec.md 變更行」中，識別被修改的 US/AC
+3. **交叉比對 spec-delta-log.md**：讀取 `FEATURE_DIR/spec-delta-log.md`（若存在），比對每筆變更是否有對應紀錄
+
+**結果分類**：
+
+| 情況 | 嚴重性 | 處理 |
+|------|--------|------|
+| spec 變更有對應 spec-delta-log | ✅ OK | 已追蹤 |
+| spec 變更有 [MODIFIED] 但無 log | ⚠️ LOW | 建議補充 |
+| spec 變更無標記也無 log | ⚠️ MEDIUM | 可能為未追蹤變更 |
+| spec-delta-log 有紀錄但 spec 無變更 | ℹ️ INFO | 可能已由 refine-loop 處理 |
 
 #### Phase 4：最終攔截檢查
 
@@ -360,14 +395,15 @@ specs/system/                    # System 層（整體）
 | 版本 | 日期 | 變更說明 |
 |------|------|----------|
 | 1.0.0 | 2026-01-23 | 初始版本，從 Unify Flow 拆分 |
-| 1.1.0 | 2026-01-25 | 新增 Traceability 驗證（TR1-TR3） |
-
+| 1.1.0 | 2026-01-25 | 新增 Traceability 驗證（TR1-TR3） || 1.2.0 | 2026-02-15 | 新增 §3.5 Spec Delta Log 交叉比對（跨階段變更追蹤機制）|
 ---
 
 ## 附錄：檔案位置索引
 
 | 檔案 | 路徑 |
 |------|------|
-| Agent 指令 | `flowkit/agents/flowkit.pre-unify-check.agent.md` |
-| 相關指令：consistency-check | `flowkit/agents/flowkit.consistency-check.agent.md` |
-| 相關指令：unify-flow | `flowkit/prompt/flowkit.unify-flow.prompt.md` |
+| Agent 指令 | `.github/agents/flowkit.pre-unify-check.agent.md` |
+| Cursor Command | `.cursor/commands/flowkit.pre-unify-check.md` |
+| Prompt 檔案 | `.github/prompts/flowkit.pre-unify-check.prompt.md` |
+| 相關指令：consistency-check | `.github/agents/flowkit.consistency-check.agent.md` |
+| 相關指令：unify-flow | `.github/agents/flowkit.unify-flow.agent.md` |
