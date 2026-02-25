@@ -158,7 +158,7 @@ $targetPath = "E:\projects\my-project"
 @(
     "docs/requirements/Milestone/MNN-MilestoneName-template.md",
     "docs/requirements/user-stories/US-X-GroupName-template.md",
-    "docs/01.開發人員doc/00.Spec Kit 跨平台開發範本使用指南.md",
+    "docs/01.開發人員doc/00.SDD 跨平台開發範本使用指南.md",
     "docs/setup-guides/migration-guide.md",
     "docs/setup-guides/migration-quick-ref.md",
     "docs/setup-guides/migrate-to-full-kit.ps1"
