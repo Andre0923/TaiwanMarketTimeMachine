@@ -1,7 +1,7 @@
 # FlowKit Consistency Check 功能說明
 
 > **指令名稱**：`/flowkit.consistency-check`  
-> **Agent 檔案**：`flowkit/agents/flowkit.consistency-check.agent.md`  
+> **Agent 檔案**：`.github/agents/flowkit.consistency-check.agent.md`  
 > **執行時機**：Plan 完成後、Tasks 執行前
 
 ---
@@ -74,6 +74,22 @@
 | System Spec 存在 | HIGH | 用於範圍檢查 |
 | `src/` 目錄存在 | RECOMMENDED | 用於重複檢查 |
 
+### 2.4 首個 Feature 特殊處理
+
+> 🟡 **首個 Feature 可略過或簡化執行**
+
+當專案還沒有任何實作時（即 System Spec 為空、`src/` 無程式碼）：
+
+| 檢查類別 | 首個 Feature 行為 |
+|----------|-------------------|
+| A. 重複實作 | 略過（無現有功能） |
+| B. 複用遺漏 | 略過（無共享服務） |
+| C. 非意圖變動 | 略過（無範圍可溢出） |
+| D. 細節誤用 | 部分適用（檢查命名與路徑） |
+| E. 整合建議 | 有限適用（提供架構建議） |
+
+建議首個 Feature 可直接跳到 `/speckit.tasks` 繼續。
+
 ---
 
 ## 3. 檢查項目總覽
@@ -91,6 +107,16 @@
 ### 3.2 檢查項目清單
 
 #### A. 重複實作檢查
+
+**Feature Artifact 為 Change Set 排除規則**（適用所有 Feature 類型）：
+
+Feature-level 的 `contracts/`、`data-model.md` 在 SDD 架構中本質上是 System-level 同名文件的「差異描述（Delta）」。Feature Artifacts 與 System 重疊不是「重複」，而是「差異描述」。
+
+| 條件 | 判定 |
+|------|------|
+| Feature contracts/ 描述的端點在 System contracts/ 已存在 | ✅ 意圖內（Change Set） |
+| Feature data-model.md 的 Entity 在 System data-model.md 已存在 | ✅ 意圖內（Change Set） |
+| Feature 新增了 System 中不存在的全新端點或 Entity | ⚠️ 需進一步檢查是否為意圖 |
 
 | ID | 檢查項目 | 嚴重性 | 說明 |
 |----|----------|--------|------|
@@ -111,6 +137,13 @@
 **全新功能時**：B1 仍適用（應使用共享服務），B2-B3 視情況標記 N/A。
 
 #### C. 非意圖變動檢查
+
+**已知條件式模式排除**：
+
+| 模式 | 說明 | 條件 |
+|------|------|------|
+| UI 任務條件式生成 | Plan 模板自動產生 UI 相關 checkbox | 若 Feature UI Impact = None 或 Target = L0，降級為 INFO |
+| Feature Design Artifacts | Feature 在 plan.md 列出設計文件 | 若檔案位於 `specs/features/NNN-*/` 內，為正常行為 |
 
 | ID | 檢查項目 | 嚴重性 | 說明 |
 |----|----------|--------|------|
@@ -144,7 +177,7 @@
 ```markdown
 1. 確認 Feature 目錄存在（spec.md + plan.md）
 2. 確認參考資料存在（system-context.md、System 層、src/）
-3. 判斷 Feature 類型（全新/修改/重構）
+3. 判斷 Feature 類型（全新/修改/重構/Bugfix-Tech Debt）
 ```
 
 ### Phase 1：抽取 Plan 決策清單
@@ -294,6 +327,18 @@ specs/system/                    # System 層（整體）
 
 ## 8. 使用範例
 
+### `--default` 模式
+
+> 📝 詳細說明請參考 [功能說明-default-mode.md](./功能說明-default-mode.md)
+
+```bash
+# GitHub Copilot Agent 模式
+@workspace /flowkit.consistency-check --default
+
+# 等同於
+/flowkit.consistency-check
+```
+
 ### 8.1 基本使用
 
 ```
@@ -383,6 +428,7 @@ specs/system/                    # System 層（整體）
 |------|------|----------|
 | 1.0.0 | 2026-01-23 | 初始版本，從 pre-unify-check 重新設計，聚焦非意圖性錯誤 |
 | 1.0.1 | 2026-01-25 | 新增 System 層分層讀取規則 |
+| 1.1.0 | 2026-02-14 | 新增 Bugfix/Tech Debt 類型感知、Change Set 排除規則、C 類條件式過濾 |
 
 ---
 

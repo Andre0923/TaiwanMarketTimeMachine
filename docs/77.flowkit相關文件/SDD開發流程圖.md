@@ -1,6 +1,6 @@
 # SDD 開發流程圖
 
-> **最後更新**：2026-01-26  
+> **最後更新**：2026-02-16  
 > **用途**：SpecKit + FlowKit 整體開發流程視覺化（Mermaid 版本）
 
 ---
@@ -14,17 +14,20 @@
 | | 2 | `flowkit.Milestone-context` | PRD, Milestone, System | 設計上下文, 衝突報告 | 抽取相關內容 + 衝突檢測 |
 | **規格定義** | 3 | `speckit.specify` | Milestone | Feature Spec, 新分支 | 建立 Feature 規格 |
 | | 4 | `speckit.clarify` | Spec | 釐清後 Spec | 🟡 選擇性 |
-| | 5 | `flowkit.system-context` | System | 已實作上下文 | **建議必要**（除非首個 Feature） |
+| | 5 | `flowkit.system-context` | System | 已實作上下文 | **建議必要**🟡 首個 Feature 略過  |
 | | 6 | `speckit.plan` | Spec, 上下文 | Plan | 制定實作計畫 |
-| | 7 | `flowkit.consistency-check` | Plan, System | 檢查報告 | 確認覆用、不重做、整合建議 |
+| | 7 | `flowkit.consistency-check` | Plan, System | 檢查報告 | 確認覆用、不重做、整合建議 🟡 首個 Feature 略過  |
 | **任務拆解** | 8a | `speckit.tasks` | Plan | Tasks | 拆解可驗收任務 |
 | | 8b | `speckit.analyze` | Tasks, 程式碼 | 分析報告 | 確認 Feature 內一致性 |
 | **實作** | 9 | `speckit.implement` | Tasks | 程式碼, 測試 | 實作程式碼 |
-| | 9' | `flowkit.refine-loop` | 修正需求 | 更新 Spec/Code | 🔄 循環：需要時使用 |
+| | 9.5 | `flowkit.code-check` | 程式碼, 測試 | 驗證報告, Bug-Fix 清單 | AI 五層驗證金字塔 + 非功能回歸分流 |
+| | 9' | `flowkit.refine-loop` | 修正需求 / Bug-Fix 清單 | 更新 Spec/Code | 🔄 循環：code-check FAIL 或 Bug-Fix 時使用 |
 | **驗證合併** | 10a | `flowkit.pre-unify-check` | 實作結果 | 檢查報告 | 確認可安全合併 |
 | | 10b | `flowkit.trace` | Spec, Code | 追溯索引 | 建立規格-程式碼對照 |
 | | 10c | `flowkit.requirement-sync` | Feature, PRD, US | 更新需求文件 | 回寫變更至 PRD / User Stories |
-| | 11 | `flowkit.unify-flow` | Feature | System 更新 | 合併至 System Spec |
+| | 11 | `flowkit.unify-flow` | Feature | System 更新, TD 結案 | 合併至 System Spec + TD Reconciliation |
+| **PR 提交** | 12 | `flowkit.pr-review` | 全部產出 | PR Review 報告, PR | 六維品質審查 + TD 驗證 + 自動 PR |
+| **全專案健康** | — | `flowkit.system-health` | 全專案 | 健康報告, TD 登記 | 🟡 Advisory，隨時可執行（建議 Milestone 前） |
 
 ---
 
@@ -80,12 +83,22 @@ flowchart TB
 
     subgraph Phase4["💻 Phase 4：實作"]
         IMPL["9️⃣ speckit.implement<br/>實作程式碼 + 測試"]
+        CODECHECK["9️⃣.5 flowkit.code-check<br/>AI 五層驗證金字塔"]
         REFINE["9️⃣' flowkit.refine-loop<br/>小幅修正循環"]
+        TRIAGE{"非功能回歸<br/>Bug-Fix Triage"}
+        REFINE_BF["9️⃣' refine-loop<br/>Bug-Fix 模式"]
+        TD_REG["登記 TD<br/>（HIGH / 需改 Spec）"]
         
-        IMPL --> IMPL_Check{需要修正？}
-        IMPL_Check -->|是| REFINE
-        IMPL_Check -->|否| PUC
+        IMPL --> CODECHECK
+        CODECHECK --> CC_Result{PASS / FAIL？}
+        CC_Result -->|❌ FAIL| REFINE
+        CC_Result -->|✅ PASS| PUC
+        CC_Result -->|🟡 非功能回歸| TRIAGE
+        TRIAGE -->|EASY/MEDIUM| REFINE_BF
+        TRIAGE -->|HIGH| TD_REG
         REFINE --> IMPL
+        REFINE_BF --> CODECHECK
+        TD_REG -.-> PUC
     end
 
     subgraph Phase5["✅ Phase 5：驗證合併"]
@@ -102,7 +115,16 @@ flowchart TB
         REQSYNC --> UNIFY
     end
 
-    UNIFY --> NEXT["🔄 下一個 Feature"]
+    subgraph Phase6["📤 Phase 6：PR 提交"]
+        PRREVIEW["1️⃣2️⃣ flowkit.pr-review<br/>六維品質審查<br/>+ TD Closure Verification"]
+        PRREVIEW --> PR_Check{品質通過？}
+        PR_Check -->|"🟢 READY"| PR_CREATE["🔀 gh pr create"]
+        PR_Check -->|"🔴 NOT READY"| PR_FIX["回退修正"]
+        PR_FIX --> REFINE
+    end
+
+    UNIFY --> PRREVIEW
+    PR_CREATE --> NEXT["🔄 下一個 Feature"]
     NEXT -.-> BDD
 
     style Phase1 fill:#e3f2fd
@@ -110,6 +132,7 @@ flowchart TB
     style Phase3 fill:#ffe0b2
     style Phase4 fill:#e8f5e9
     style Phase5 fill:#f3e5f5
+    style Phase6 fill:#fce4ec
 ```
 
 ---
@@ -139,7 +162,10 @@ flowchart LR
     end
     
     subgraph 實作["💻 實作"]
-        I["implement"] -.-> I2["refine-loop"]
+        I["implement"] --> I3["code-check"]
+        I3 -.->|FAIL| I2["refine-loop"]
+        I3 -.->|"🟡 非功能回歸"| I4["Bug-Fix Triage"]
+        I4 -.->|"EASY/MEDIUM"| I2
         I2 -.-> I
     end
     
@@ -149,12 +175,19 @@ flowchart LR
         K --> L["unify-flow"]
     end
     
+    subgraph PR["📤 PR 提交"]
+        M["pr-review"]
+    end
+    
     PRD --> A1
     B --> C
     F --> G
     H --> I
-    I --> J
-    L -.-> |"Next Feature"| A2
+    I3 -->|PASS| J
+    L --> M
+    M -.-> |"🔴 NOT READY"| I2
+    M -->|"🟢 READY"| PR_OUT["🔀 gh pr create"]
+    PR_OUT -.-> |"Next Feature"| A2
     
     style 輸入 fill:#e8eaf6
     style 需求 fill:#e3f2fd
@@ -162,6 +195,7 @@ flowchart LR
     style 任務 fill:#ffe0b2
     style 實作 fill:#e8f5e9
     style 驗證 fill:#f3e5f5
+    style PR fill:#fce4ec
 ```
 
 > 🟡 **注意**：
@@ -205,6 +239,9 @@ mindmap
         consistency-check
           覆用檢查
           整合建議
+        code-check
+          AI 五層驗證金字塔
+          implement 後執行
         pre-unify-check
           實作驗證
         trace
@@ -216,6 +253,15 @@ mindmap
           更新專案上下文
         refine-loop
           小幅修正循環
+      PR 提交
+        pr-review
+          六維品質審查
+          自動 PR 建立
+      全專案健康
+        system-health
+          五維度診斷 D1~D5
+          TD 自動登記
+          Advisory 隨時可執行
 ```
 
 ---
@@ -331,19 +377,22 @@ flowchart TD
 ```mermaid
 flowchart TD
     IMPL["speckit.implement<br/>實作程式碼"]
+    CODECHECK["flowkit.code-check<br/>AI 五層驗證金字塔"]
     
-    IMPL --> Check{完成？<br/>需要修正？}
-    Check -->|需要修正| REFINE["flowkit.refine-loop<br/>小幅修正"]
-    Check -->|完成| Next["→ Phase 5"]
+    IMPL --> CODECHECK
+    CODECHECK --> Check{PASS / FAIL？}
+    Check -->|❌ FAIL| REFINE["flowkit.refine-loop<br/>小幅修正"]
+    Check -->|✅ PASS| Next["→ Phase 5"]
     REFINE --> IMPL
 ```
 
-**目的**：按照規格實作程式碼，必要時進行小幅調整
+**目的**：按照規格實作程式碼，透過 code-check 驗證品質，必要時進行小幅調整
 
 | 指令 | 核心任務 | 使用時機 |
 |------|----------|----------|
 | `implement` | 實作程式碼 | 主要實作流程 |
-| `refine-loop` | 小幅修正 | 發現需要調整規格或程式碼時 |
+| `code-check` | AI 五層驗證 | implement 完成後自動執行 |
+| `refine-loop` | 小幅修正 | code-check FAIL 時修復問題 |
 
 ---
 
@@ -371,7 +420,151 @@ flowchart TD
 | `pre-unify-check` | 實作驗證 | 檢查報告 |
 | `trace` | 追溯建立 | Spec-Code 對照索引 |
 | `requirement-sync` | 需求同步 | 更新 PRD / User Stories |
-| `unify-flow` | 合併 | System Spec 更新 |
+| `unify-flow` | 合併 + TD 結案 | System Spec 更新、TD Reconciliation |
+
+---
+
+## 技術債生命週期視圖
+
+```mermaid
+flowchart LR
+    subgraph 登記["📝 登記通道"]
+        CC_TD["code-check<br/>LOW 放行登記"]
+        PR_TD["pr-review<br/>品質放行登記"]
+        SH_TD["system-health<br/>五維度檢查登記"]
+    end
+
+    subgraph 追蹤["📅 追蹤規劃"]
+        BDD_TD["BDD-Milestone<br/>建議納入 Milestone"]
+    end
+
+    subgraph 標註["🏷️ 標註"]
+        SPEC_TD["specify<br/>TD Ref 標註"]
+    end
+
+    subgraph 結案["✅ 結案"]
+        UNIFY_TD["unify-flow<br/>Phase 7<br/>TD Reconciliation"]
+    end
+
+    subgraph 驗證["🔍 驗證"]
+        PRREV_TD["pr-review<br/>Phase 7.6<br/>TD Closure Verification"]
+    end
+
+    TD_REG[("📚 TD Registry<br/>docs/technical-debt.md")]
+
+    CC_TD --> TD_REG
+    PR_TD --> TD_REG
+    SH_TD --> TD_REG
+    TD_REG --> BDD_TD
+    TD_REG --> SPEC_TD
+    SPEC_TD -->|"> TD Ref: TD-XXX"| UNIFY_TD
+    UNIFY_TD -->|"結案更新"| TD_REG
+    UNIFY_TD --> PRREV_TD
+    PRREV_TD -->|"一致性檢查"| PR_OUT["🔀 PR"]
+
+    style 登記 fill:#e8f5e9
+    style 追蹤 fill:#fff9c4
+    style 標註 fill:#e3f2fd
+    style 結案 fill:#f3e5f5
+    style 驗證 fill:#fce4ec
+```
+
+> 📖 **詳細說明**：[技術債生命週期管理](./%E5%8A%9F%E8%83%BD%E8%AA%AA%E6%98%8E-%E6%8A%80%E8%A1%93%E5%82%B5%E7%94%9F%E5%91%BD%E9%80%B1%E6%9C%9F%E7%AE%A1%E7%90%86.md)
+
+---
+
+## 測試策略視圖
+
+### 測試執行全景
+
+```mermaid
+flowchart TD
+    subgraph Spec["📝 規格階段"]
+        AC["Acceptance Criteria<br/>Given / When / Then"]
+    end
+
+    subgraph Implement["💻 實作階段"]
+        WRITE_TEST["speckit.implement<br/>§7.5 測試標記指引<br/>撰寫測試 + 標記"]
+        CONFTEST["tests/conftest.py<br/>marker 註冊<br/>+ 自動慢測試偵測"]
+    end
+
+    subgraph CodeCheck["🔍 code-check L2"]
+        XDIST_CHECK{"pytest-xdist<br/>已安裝？"}
+        INSTALL["uv add pytest-xdist<br/>自動安裝"]
+        STEP1["Step 1：快速測試（並行）<br/>-m 'not slow and not serial'<br/>-n auto"]
+        STEP2["Step 2：慢+串行測試<br/>-m 'slow or serial'<br/>（串行執行）"]
+        MERGE["合併統計<br/>passed / failed / skipped"]
+    end
+
+    subgraph Artifacts["📂 產物"]
+        DURATIONS[".artifacts/<br/>test-durations.json"]
+        REPORT[".artifacts/<br/>code-check-report.md"]
+    end
+
+    AC -->|"衍生測試案例"| WRITE_TEST
+    WRITE_TEST --> CONFTEST
+    CONFTEST --> XDIST_CHECK
+    XDIST_CHECK -->|否| INSTALL
+    INSTALL --> STEP1
+    XDIST_CHECK -->|是| STEP1
+    STEP1 --> STEP2
+    STEP2 --> MERGE
+    MERGE --> REPORT
+    CONFTEST -->|"記錄耗時"| DURATIONS
+    DURATIONS -->|"下次自動標記"| CONFTEST
+
+    style Spec fill:#fff9c4
+    style Implement fill:#e8f5e9
+    style CodeCheck fill:#e3f2fd
+    style Artifacts fill:#f3e5f5
+```
+
+### 測試標記與分批機制
+
+```mermaid
+flowchart LR
+    subgraph Markers["🏷️ 測試標記"]
+        SLOW["@pytest.mark.slow<br/>耗時 > 30 秒"]
+        SERIAL["@pytest.mark.serial<br/>共享資源不可並行"]
+        NONE["無標記<br/>快速 + 可並行"]
+    end
+
+    subgraph Auto["🤖 自動標記"]
+        HISTORY["test-durations.json<br/>歷史耗時記錄"]
+        AUTO_MARK["conftest.py<br/>超過 30s 自動標記"]
+    end
+
+    subgraph Execution["⚡ 分批執行"]
+        FAST["Step 1（並行）<br/>pytest -n auto<br/>not slow and not serial"]
+        SLOW_RUN["Step 2（串行）<br/>slow or serial"]
+    end
+
+    HISTORY --> AUTO_MARK
+    AUTO_MARK -->|"自動加 @slow"| SLOW
+
+    NONE --> FAST
+    SLOW --> SLOW_RUN
+    SERIAL --> SLOW_RUN
+
+    style Markers fill:#e8f5e9
+    style Auto fill:#fff9c4
+    style Execution fill:#e3f2fd
+```
+
+### 測試在各階段的角色
+
+| 階段 | 測試相關活動 | 關鍵指令 |
+|------|------------|----------|
+| **規格定義** | AC 撰寫（Given/When/Then） | `speckit.specify` |
+| **任務拆解** | 測試任務識別 | `speckit.tasks` |
+| **實作** | Test-First 撰寫測試 + 標記（slow/serial） | `speckit.implement` §7.5 |
+| **驗證** | L2 分批執行 + 回歸分析 + 非功能回歸分流 | `flowkit.code-check` |
+| **修正** | 測試失敗修復 + Bug-Fix 模式 | `flowkit.refine-loop` |
+| **合併前** | AC↔測試覆蓋度檢查 | `flowkit.pre-unify-check` |
+| **追溯** | @spec-ac 對照索引 | `flowkit.trace` |
+| **健康檢查** | 測試通過率 + AC 覆蓋度評分 | `flowkit.system-health` |
+
+> 📖 **詳細說明**：[測試策略與自動化機制](./%E5%8A%9F%E8%83%BD%E8%AA%AA%E6%98%8E-%E6%B8%AC%E8%A9%A6%E7%AD%96%E7%95%A5%E8%88%87%E8%87%AA%E5%8B%95%E5%8C%96%E6%A9%9F%E5%88%B6.md)
 
 ---
 

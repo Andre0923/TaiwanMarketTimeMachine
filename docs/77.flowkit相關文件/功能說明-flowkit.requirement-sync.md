@@ -1,7 +1,7 @@
 # FlowKit Requirement Sync 功能說明
 
 > **指令名稱**：`/flowkit.requirement-sync`  
-> **Agent 檔案**：`flowkit/agents/flowkit.requirement-sync.agent.md`  
+> **Agent 檔案**：`.github/agents/flowkit.requirement-sync.agent.md`  
 > **執行時機**：Unify Flow 前（Pre-Unify Check 前或後）
 
 ---
@@ -40,15 +40,17 @@
                                             ▼
                  /speckit.tasks → /speckit.implement
                                             │
-                                            ▼                              /flowkit.pre-unify-check
-                                            │
-                                            ▼                                   /flowkit.trace
-                                            │
                                             ▼
-                          /flowkit.requirement-sync ◄── 在此執行
+                              /flowkit.code-check
                                             │
                                             ▼
                               /flowkit.pre-unify-check
+                                            │
+                                            ▼
+                                   /flowkit.trace
+                                            │
+                                            ▼
+                          /flowkit.requirement-sync ◄── 在此執行
                                             │
                                             ▼
                                /flowkit.unify-flow
@@ -59,9 +61,11 @@
 | 指令 | 時機 | 關係 |
 |------|------|------|
 | `flowkit.consistency-check` | Plan 後 | 檢查 Plan 與 System 的一致性 |
-| `flowkit.requirement-sync` | Unify 前 | 將 Feature 變更回寫至需求文件（**本指令**） |
-| `flowkit.pre-unify-check` | Unify 前 | 檢查 Spec 品質與實作對齊 |
-| `flowkit.unify-flow` | 驗證通過後 | 合併 Feature 至 System |
+| `flowkit.code-check` | Implement 後 | 程式碼品質驗證（Runtime 檢查） |
+| `flowkit.pre-unify-check` | code-check 後 | 檢查 Spec 品質與實作對齊（步驟 10a） |
+| `flowkit.trace` | pre-unify-check 後 | 建立 Spec-Code 追溯索引（步驟 10b） |
+| `flowkit.requirement-sync` | trace 後 | 將 Feature 變更回寫至需求文件（**本指令**，步驟 10c） |
+| `flowkit.unify-flow` | requirement-sync 後 | 合併 Feature 至 System（步驟 11） |
 
 ### 2.3 執行條件
 
@@ -93,10 +97,14 @@
 
 | 分類 | 判斷依據 | 處理方式 |
 |------|----------|----------|
-| **刻意修正** | 有 `[MODIFIED]` 標記、Plan 有說明 | 自動回寫 |
-| **澄清補充** | 內容更詳細但語意相同 | 建議回寫 |
-| **非意圖不一致** | 無標記、疑似遺漏 | 詢問使用者 |
-| **格式差異** | 僅格式不同 | 忽略 |
+| **A. 刻意修正** | 有 `[MODIFIED]` 標記、Plan 有說明、Refine Delta 有記錄、Spec Delta Log 有對應 | 自動回寫 |
+| **B. 澄清補充** | 內容更詳細但語意相同 | 建議回寫 |
+| **C. 範圍裁切** | Feature 移除標記為「可選」的 AC/US、初版範圍裁剪、未實作但具未來價值 | 🔒 保留不動 |
+| **D. 限縮合併** | Feature 收緊限制條件、合併多個 AC 為更嚴格的單一 AC | 🔒 保留原始 |
+| **E. 非意圖不一致** | 無標記、無輔助信號、疑似遺漏 | 詢問使用者 |
+| **F. 格式差異** | 僅格式不同 | 忽略 |
+
+> 📌 **C/D 類保留原則**（v1.4.0 新增）：requirement-sync 的目的是「將本意修正寫回」。範圍裁切（暫不做 ≠ 永遠不做）與限縮合併（實作更嚴格 ≠ 需求應收窄）不屬於本意修正，原始需求應保留。
 
 ### 3.3 回寫同步
 
@@ -106,12 +114,26 @@
 |----------|----------|
 | `[NEW]` US/AC | 在對應檔案中新增 |
 | `[MODIFIED]` US/AC | 更新對應內容 |
-| `[DELETED]` US/AC | 標記刪除或移除 |
+| `[DELETED]` US/AC（永久移除） | 標記刪除或移除 |
+| `[DELETED]` US/AC（範圍裁切） | 🔒 保留原始需求（未來 Milestone 候選） |
+| 限制條件收緊 / AC 合併更嚴格 | 🔒 保留原始合理門檻 |
 | 無標記但有差異 | 詢問後處理 |
 
 ---
 
 ## 4. 使用方式
+
+### `--default` 模式
+
+> 📝 詳細說明請參考 [功能說明-default-mode.md](./功能說明-default-mode.md)
+
+```bash
+# GitHub Copilot Agent 模式
+@workspace /flowkit.requirement-sync --default
+
+# 等同於
+/flowkit.requirement-sync
+```
 
 ### 4.1 CLI 風格
 
@@ -170,7 +192,7 @@
 ### Phase 3：意圖判斷
 
 ```markdown
-1. 根據變更標記、Plan 說明分類差異
+1. 根據變更標記、Plan 說明、Spec Delta Log 分類差異
 2. 產生分類報告
 3. 標記需要使用者確認的項目
 ```
@@ -254,6 +276,9 @@
 
 | 版本 | 日期 | 說明 |
 |------|------|------|
+| 1.4.0 | 2026-02-13 | 新增「範圍裁切」與「限縮合併」分類（C/D 類保留原則），強化「需求保留原則」，優先檢測保留類型的判斷邏輯 |
+| 1.3.0 | 2026-02-15 | 新增 spec-delta-log.md 為意圖判斷信號源（跨階段變更追蹤機制）|
+| 1.2.0 | 2026-02-08 | 多信號源意圖判斷、流程圖補 code-check、階段性開發指引 |
 | 1.0.0 | 2026-01-26 | 初版發布 |
 
 ---

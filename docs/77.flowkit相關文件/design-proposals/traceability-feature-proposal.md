@@ -172,7 +172,7 @@ pub struct User {
 
 ### 4.1 /flowkit.trace 指令規格（已實作）
 
-> **實際檔案位置**：`flowkit/agents/flowkit.trace.agent.md`
+> **實際檔案位置**：`.github/agents/flowkit.trace.agent.md`
 
 ```markdown
 # FlowKit Trace
@@ -387,11 +387,11 @@ class User:
 
 | 檔案 | 位置 | 說明 |
 |------|------|------|
-| `flowkit.trace.agent.md` | `flowkit/agents/` | 新建，產生 traceability-index.md |
+| `flowkit.trace.agent.md` | `.github/agents/` | 新建，產生 traceability-index.md |
 | `traceability-index-template.md` | `speckit/templates/` | 新建，索引模板 |
 | `speckit.implement.agent.md` | `speckit/agents/` | 新增 Step 8 @spec 註解規則 |
 | `tasks-template.md` | `speckit/templates/` | 新增 User Story 標籤用途說明 |
-| `flowkit.pre-unify-check.agent.md` | `flowkit/agents/` | Phase 3.4 新增 TR1-TR3 檢查 |
+| `flowkit.pre-unify-check.agent.md` | `.github/agents/` | Phase 3.4 新增 TR1-TR3 檢查 |
 | `flowkit.unify-flow.prompt.md` | `flowkit/prompt/` | Phase 4 新增 traceability-index 合併 |
 
 ### 下一步

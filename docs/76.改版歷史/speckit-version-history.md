@@ -9,7 +9,7 @@
 ### speckit.specify
 
 | 版本 | 日期 | 變更說明 |
-|------|------|----------|
+|------|------|----------|| 1.3.0 | 2026-02-15 | 新增 TD Ref 標註（步驟 5.5/4.5）：specify 階段讀取 Open TD 並在相關 US 標註 `> TD Ref: TD-XXX`（SHOULD） || 1.2.0 | 2026-02-14 | 改進 Feature 編號邏輯：納入 `specs/history/` 計算（unify-flow 完成的 Feature）、搜尋所有 Feature 編號（全域唯一）而非僅匹配 short-name、移除 Bash 範例（PowerShell-only） |
 | 1.1.0 | 2026-02-01 | 新增 `--default` 模式，自動偵測最新 Milestone |
 | 1.0.0 | 2026-01-XX | 初始版本 |
 
@@ -19,6 +19,7 @@
 
 | 版本 | 日期 | 變更說明 |
 |------|------|----------|
+| 1.2.0 | 2026-02-15 | 新增 §8.5/§7.5 Spec 修訂標記自動注入（Auto-Marking）：clarify 修改 US/AC 後自動加上 [MODIFIED]/[NEW]/[DELETED]；新增 §8.6/§7.6 Spec Delta Log 規格差異日誌機制（提案 #3 實施） |
 | 1.1.0 | 2026-02-01 | 新增 `--default` 模式支援 |
 | 1.0.0 | 2026-01-XX | 初始版本 |
 
@@ -46,6 +47,9 @@
 
 | 版本 | 日期 | 變更說明 |
 |------|------|----------|
+| 1.4.0 | 2026-02-14 | F 通道新增遞進精鍊感知規則（Progressive Refinement Awareness）；G 通道新增 L0 Maturity 降級機制（L0 場景 G1/G5/G6 降級）；E 通道新增 Affected Files 容差規則（間接影響檔案降級） |
+| 1.3.0 | 2026-02-09 | §9.5/§8.5 從「提醒使用者」升級為「AI 自動注入標記」：Remediation 修改 US/AC 時自動加上 [MODIFIED]/[NEW]/[DELETED]（提案 #1 實施） |
+| 1.2.0 | 2026-02-08 | 新增 Spec 修訂標記提醒（§9.5/§8.5）：Remediation 修改 US/AC 後提醒使用者加上 [MODIFIED]/[NEW]/[DELETED] 標記 |
 | 1.1.0 | 2026-02-01 | 新增 `--default` 模式支援 |
 | 1.0.0 | 2026-01-XX | 初始版本 |
 
@@ -55,6 +59,10 @@
 
 | 版本 | 日期 | 變更說明 |
 |------|------|----------|
+| 1.5.0 | 2026-02-25 | Feature Status 自動管理（Issue #4）：新增 §1.6 開始實作時設定 `In Progress`；Step 11/9 完成後設定 `Implemented`；MUST NOT 規則新增元資料例外（status, implement_baseline_commit, updated）|
+| 1.4.0 | 2026-02-15 | 測試標記指引更新：慢測試閾值調整為 30 秒（原 10 秒） |
+| 1.3.0 | 2026-02-15 | 新增 §7.5/§6.5 測試標記指引（Test Markers）：Python pytest 專案 MUST 根據準則標記 `@pytest.mark.slow`（耗時）和 `@pytest.mark.serial`（不可並行），含判斷準則、範例、自動標記說明 |
+| 1.2.0 | 2026-02-15 | 新增 §1.5 Git Hash 基線記錄（implement_baseline_commit）供 pre-unify-check git diff 比對；新增 §10.5/§8.5 Spec Delta Log 規格差異日誌（MUST）：實作中發現規格差異必須記錄（提案 #3 實施） |
 | 1.1.0 | 2026-02-01 | 新增 `--default` 模式支援 |
 | 1.0.0 | 2026-01-XX | 初始版本 |
 

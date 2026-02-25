@@ -1,7 +1,7 @@
 # FlowKit Unify Flow 功能說明
 
 > **指令名稱**：`/flowkit.unify-flow`  
-> **Agent 檔案**：`flowkit/agents/flowkit.unify-flow.agent.md`  
+> **Agent 檔案**：`.github/agents/flowkit.unify-flow.agent.md`  
 > **相關檔案**：`traceability-index-template.md`（用於合併追溯索引）
 
 ---
@@ -69,6 +69,17 @@
 ### 2.3 執行順序限制
 
 > ⚠️ **重要**：在 Unify Flow 之外**不得直接修改** `specs/system/`
+
+### 2.4 `--default` 模式
+
+> 📝 **詳細說明**：請參考 [功能說明-default-mode.md](./功能說明-default-mode.md)
+
+```bash
+# GitHub Copilot Agent 模式
+@workspace /flowkit.unify-flow --default
+```
+
+使用 `--default` 時，指令會自動偵測當前工作的 Feature 目錄，並自動合併至 System 層級。
 
 ---
 
@@ -298,6 +309,62 @@ specs/history/
 - Traceability 狀態
 - 驗證結果
 
+### Phase 6.5：Feature Summary 自動產生
+
+> ℹ️ **v1.2.0 新增**：將 Feature 開發經驗萃取為結構化摘要
+
+**目的**：將本次 Feature 的開發經驗萃取為結構化摘要，供後續 Feature 開發參考。
+
+**執行**：
+1. 建立目錄（若不存在）：`.flowkit/memory/learning/feature-summaries/`
+2. 依範本 `.flowkit/templates/feature-summary.template.md` 產生 Feature Summary
+3. 寫入 `.flowkit/memory/learning/feature-summaries/NNN-feature-name-summary.md`
+
+**資料來源**：
+
+| 來源 | 萃取內容 |
+|------|----------|
+| `spec.md` | US/AC 統計 |
+| `plan.md` | 關鍵決策 |
+| `spec-delta-log.md` | 規格差異紀錄統計 |
+| `.refine/` | refine-loop 循環數 |
+| `code-check-report-*.md` | code-check 循環數 |
+| Escalation Log | Unify 過程商議紀錄 |
+
+**強度等級**：SHOULD（產生失敗不阻擋 Unify Flow 完成）
+
+> 📌 Feature Summary 為經驗累積機制，後續可由 `plan` 階段參考，提升工時預估準確度。
+
+### Phase 7：TD Reconciliation（技術債結案）
+
+> ℹ️ **v1.3.0 新增**：Feature 完成時自動比對 TD Ref 標註與 Open TD，提議結案
+
+**目的**：在 Feature 合併至 System Spec 時，同步結算本次開發所解決的技術債項目，確保 `docs/technical-debt.md` 保持最新狀態。
+
+**觸發條件**：
+- `docs/technical-debt.md` 存在
+- Active Items 中有 `Status: Open` 的項目
+- 若不符合條件 → 跳過（輸出 `➖ 跳過`）
+
+**執行流程**：
+1. **讀取 Open TD**：從 `docs/technical-debt.md` 讀取所有 `Status: Open` 項目
+2. **收集 TD Ref**：掃描 Feature spec.md 中的 `> TD Ref: TD-XXX` 標註
+3. **產生候選結案清單**：
+   - **直接解決**：spec.md 中有 TD Ref 標記的項目
+   - **附帶解決**：git diff 顯示 PR 修改了 Open TD 相關 Component 的程式碼
+4. **MUST ASK 人類確認**：逐項列出候選清單，等待人類確認
+5. **更新 TD Registry**：
+   - 確認 Resolved 的項目：更新 `Status: Resolved`、填入 `Resolved-By`、`Resolved-Date`
+   - Won't Fix 項目：更新 `Status: Won't Fix`、填入 `Won't-Fix-Reason`
+   - 搬移至 Resolved Items 表格
+6. **產出摘要**：N 項 Resolved / M 項 Won't Fix / K 項維持 Open
+
+**強度等級**：SHOULD（無 TD Registry 或無 Open TD 則跳過，不阻擋）
+
+**與 pr-review Phase 7.6 的關係**：
+- unify-flow Phase 7 是「結案通道」（唯一修改 TD Registry 的地方）
+- pr-review Phase 7.6 是「驗證閘門」（檢查結案一致性，僅產出 WARNING/INFO）
+
 ---
 
 ## 6. 與其他指令的關係
@@ -514,6 +581,8 @@ specs/history/
 | 版本 | 日期 | 變更說明 |
 |------|------|----------|
 | 1.0.0 | 2026-01-25 | 初始文件版本 |
+| 1.3.0 | 2026-02-15 | 新增 Phase 7 TD Reconciliation：Feature 完成時自動比對 TD Ref 標註與 Open TD，提議結案並更新 TD Registry |
+| 1.2.0 | 2026-02-15 | 新增 Phase 6.5 Feature Summary 自動產生（跨階段變更追蹤機制）|
 
 ---
 
@@ -521,7 +590,7 @@ specs/history/
 
 | 類型 | 位置 |
 |------|------|
-| Agent 指令檔 | `flowkit/agents/flowkit.unify-flow.agent.md` |
+| Agent 指令檔 | `.github/agents/flowkit.unify-flow.agent.md` |
 | 追溯索引 Template | `flowkit/templates/traceability-index-template.md` |
 | 本功能說明 | `flowkit/docs/功能說明-flowkit.unify-flow.md` |
 

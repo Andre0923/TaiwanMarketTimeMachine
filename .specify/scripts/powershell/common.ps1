@@ -20,7 +20,20 @@ function Get-RepoRoot {
         # Git command failed
     }
     
-    # Fall back to script location for non-git repos
+    # Fall back to marker-based search (robust for Chinese/Unicode paths)
+    $current = Resolve-Path -LiteralPath $PSScriptRoot
+    while ($true) {
+        foreach ($marker in @('.git', '.specify')) {
+            if (Test-Path (Join-Path $current $marker)) {
+                return $current.Path
+            }
+        }
+        $parent = Split-Path $current -Parent
+        if (-not $parent -or $parent -eq $current) { break }
+        $current = $parent
+    }
+    
+    # Final fallback: relative path
     $fallbackPath = Join-Path $PSScriptRoot "../../.."
     return (Resolve-Path -LiteralPath $fallbackPath).Path
 }
@@ -43,13 +56,13 @@ function Get-CurrentBranch {
     
     # For non-git repos, try to find the latest feature directory
     $repoRoot = Get-RepoRoot
-    $specsDir = Join-Path $repoRoot "specs"
+    $featuresDir = Join-Path $repoRoot "specs" "features"
     
-    if (Test-Path $specsDir) {
+    if (Test-Path $featuresDir) {
         $latestFeature = ""
         $highest = 0
         
-        Get-ChildItem -Path $specsDir -Directory | ForEach-Object {
+        Get-ChildItem -Path $featuresDir -Directory | ForEach-Object {
             if ($_.Name -match '^(\d{3})-') {
                 $num = [int]$matches[1]
                 if ($num -gt $highest) {

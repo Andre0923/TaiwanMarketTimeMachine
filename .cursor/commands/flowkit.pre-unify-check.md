@@ -13,7 +13,9 @@
 $ARGUMENTS
 ```
 
-在繼續執行之前，您**必須（MUST）**考慮使用者輸入（若非空白）。
+> 💡 **`--default` 模式**：輸入 `--default` 等同於無額外指示，直接執行預設流程。
+
+在繼續執行之前，您**必須（MUST）**考慮使用者輸入（若非空白或 `--default`）。
 
 ---
 
@@ -245,10 +247,43 @@ $ARGUMENTS
 
 **輸出**：對齊檢查報告
 
+#### 3.5 Spec Delta Log 交叉比對（條件觸發）
+
+**觸發條件**：Feature spec.md YAML frontmatter 存在 `implement_baseline_commit` 欄位
+
+**執行步驟**：
+
+1. **取得 Git Diff**：
+   ```bash
+   git diff <implement_baseline_commit>..HEAD -- FEATURE_DIR/
+   ```
+
+2. **解析變更清單**：從 diff 產出的「spec.md 變更行」中，識別被修改的 US/AC
+
+3. **交叉比對 spec-delta-log.md**：
+   - 讀取 `FEATURE_DIR/spec-delta-log.md`（若存在）
+   - 比對每一筆 spec.md 變更是否有對應的 Spec Delta Log 記錄
+
+4. **結果分類**：
+
+   | 情況 | 嚴重性 | 處理 |
+   |------|--------|------|
+   | spec 變更有對應 spec-delta-log 記錄 | ✅ OK | 已追蹤 |
+   | spec 變更有 `[MODIFIED]` 標記但無 spec-delta-log | ⚠️ LOW | 建議補充 |
+   | spec 變更無標記也無 spec-delta-log | ⚠️ MEDIUM | 可能為未追蹤變更 |
+   | spec-delta-log 有記錄但 spec 無對應變更 | ℹ️ INFO | 可能已由 refine-loop 處理 |
+
+**若 implement_baseline_commit 不存在**：
+- 標記為 INFO：「spec.md 無 implement 基線，無法進行 git diff 交叉比對」
+- 不阻擋 Unify Flow
+
+**若 spec-delta-log.md 不存在**：
+- 若 git diff 顯示 spec.md 有變更：標記為 ⚠️ LOW（「有 spec 變更但無規格差異日誌」）
+- 若 git diff 顯示 spec.md 無變更：✅ OK（無規格差異）
+
 ---
 
 ### Phase 4：最終攔截檢查
-
 **目的**：捕捉 consistency-check 後到現在之間產生的新問題。
 
 **輸入**：所有前述資料

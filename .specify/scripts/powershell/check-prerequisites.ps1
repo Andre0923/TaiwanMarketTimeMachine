@@ -1,187 +1,155 @@
-<#
-.SYNOPSIS
-    檢查 Speckit 開發環境的前置條件
-.DESCRIPTION
-    驗證專案目錄結構、必要檔案是否存在，並輸出環境資訊供 AI Agent 使用。
-.PARAMETER Json
-    以 JSON 格式輸出結果
-.PARAMETER FeatureDir
-    指定 Feature 目錄路徑（選用）
-.EXAMPLE
-    .\check-prerequisites.ps1
-    .\check-prerequisites.ps1 -Json
-    .\check-prerequisites.ps1 -FeatureDir "specs/features/001-my-feature"
-#>
+#!/usr/bin/env pwsh
 
+# Consolidated prerequisite checking script (PowerShell)
+#
+# This script provides unified prerequisite checking for Spec-Driven Development workflow.
+# It replaces the functionality previously spread across multiple scripts.
+#
+# Usage: ./check-prerequisites.ps1 [OPTIONS]
+#
+# OPTIONS:
+#   -Json               Output in JSON format
+#   -RequireTasks       Require tasks.md to exist (for implementation phase)
+#   -IncludeTasks       Include tasks.md in AVAILABLE_DOCS list
+#   -PathsOnly          Only output path variables (no validation)
+#   -Help, -h           Show help message
+
+[CmdletBinding()]
 param(
     [switch]$Json,
-    [string]$FeatureDir = ""
+    [switch]$RequireTasks,
+    [switch]$IncludeTasks,
+    [switch]$PathsOnly,
+    [switch]$Help
 )
 
-# 取得專案根目錄（從 .specify/scripts/powershell/ 往上三層）
-$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$ProjectRoot = (Get-Item $ScriptDir).Parent.Parent.Parent.FullName
+$ErrorActionPreference = 'Stop'
 
-# 檢查結果物件
-$Result = @{
-    PROJECT_ROOT = $ProjectRoot
-    FEATURE_DIR = ""
-    AVAILABLE_DOCS = @()
-    CHECKS = @{
-        DirectoryStructure = @{}
-        SystemFiles = @{}
-        SpecifyStructure = @{}
-    }
-    STATUS = "OK"
-    ERRORS = @()
+# Fix encoding for Chinese/Unicode paths
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$OutputEncoding = [System.Text.Encoding]::UTF8
+if ($PSVersionTable.PSVersion.Major -ge 6) {
+    $PSDefaultParameterValues['*:Encoding'] = 'utf8'
 }
 
-# 檢查目錄結構
-$RequiredDirs = @(
-    "specs/system",
-    "specs/system/contracts",
-    "specs/features",
-    "specs/history",
-    "specs/history/specs",
-    "specs/history/plans",
-    "specs/history/tasks",
-    "src",
-    "tests",
-    "logs",
-    "docs"
-)
+# Show help if requested
+if ($Help) {
+    Write-Output @"
+Usage: check-prerequisites.ps1 [OPTIONS]
 
-foreach ($dir in $RequiredDirs) {
-    $fullPath = Join-Path $ProjectRoot $dir
-    $exists = Test-Path $fullPath -PathType Container
-    $Result.CHECKS.DirectoryStructure[$dir] = $exists
-    if (-not $exists) {
-        $Result.ERRORS += "Missing directory: $dir"
-        $Result.STATUS = "ERROR"
-    }
+Consolidated prerequisite checking for Spec-Driven Development workflow.
+
+OPTIONS:
+  -Json               Output in JSON format
+  -RequireTasks       Require tasks.md to exist (for implementation phase)
+  -IncludeTasks       Include tasks.md in AVAILABLE_DOCS list
+  -PathsOnly          Only output path variables (no prerequisite validation)
+  -Help, -h           Show this help message
+
+EXAMPLES:
+  # Check task prerequisites (plan.md required)
+  .\check-prerequisites.ps1 -Json
+  
+  # Check implementation prerequisites (plan.md + tasks.md required)
+  .\check-prerequisites.ps1 -Json -RequireTasks -IncludeTasks
+  
+  # Get feature paths only (no validation)
+  .\check-prerequisites.ps1 -PathsOnly
+
+"@
+    exit 0
 }
 
-# 檢查 System 層檔案
-$SystemFiles = @(
-    "specs/system/spec.md",
-    "specs/system/data-model.md",
-    "specs/system/flows.md",
-    "specs/system/unify-flow.md"
-)
+# Source common functions
+. "$PSScriptRoot/common.ps1"
 
-foreach ($file in $SystemFiles) {
-    $fullPath = Join-Path $ProjectRoot $file
-    $exists = Test-Path $fullPath -PathType Leaf
-    $Result.CHECKS.SystemFiles[$file] = $exists
+# Get feature paths and validate branch
+$paths = Get-FeaturePathsEnv
+
+if (-not (Test-FeatureBranch -Branch $paths.CURRENT_BRANCH -HasGit:$paths.HAS_GIT)) { 
+    exit 1 
 }
 
-# 檢查 .specify 結構
-$SpecifyFiles = @(
-    ".specify/memory/constitution.md",
-    ".specify/scripts/powershell/check-prerequisites.ps1",
-    ".specify/templates/spec-template.md"
-)
-
-foreach ($file in $SpecifyFiles) {
-    $fullPath = Join-Path $ProjectRoot $file
-    $exists = Test-Path $fullPath -PathType Leaf
-    $Result.CHECKS.SpecifyStructure[$file] = $exists
-}
-
-# 處理 Feature 目錄
-if ($FeatureDir) {
-    $featurePath = if ([System.IO.Path]::IsPathRooted($FeatureDir)) {
-        $FeatureDir
+# If paths-only mode, output paths and exit (support combined -Json -PathsOnly)
+if ($PathsOnly) {
+    if ($Json) {
+        [PSCustomObject]@{
+            REPO_ROOT    = $paths.REPO_ROOT
+            BRANCH       = $paths.CURRENT_BRANCH
+            FEATURE_DIR  = $paths.FEATURE_DIR
+            FEATURE_SPEC = $paths.FEATURE_SPEC
+            IMPL_PLAN    = $paths.IMPL_PLAN
+            TASKS        = $paths.TASKS
+        } | ConvertTo-Json -Compress
     } else {
-        Join-Path $ProjectRoot $FeatureDir
+        Write-Output "REPO_ROOT: $($paths.REPO_ROOT)"
+        Write-Output "BRANCH: $($paths.CURRENT_BRANCH)"
+        Write-Output "FEATURE_DIR: $($paths.FEATURE_DIR)"
+        Write-Output "FEATURE_SPEC: $($paths.FEATURE_SPEC)"
+        Write-Output "IMPL_PLAN: $($paths.IMPL_PLAN)"
+        Write-Output "TASKS: $($paths.TASKS)"
     }
-    
-    if (Test-Path $featurePath -PathType Container) {
-        $Result.FEATURE_DIR = $featurePath
-        
-        # 收集 Feature 目錄中的文件
-        $featureFiles = @("spec.md", "plan.md", "tasks.md", "research.md", "quickstart.md", "data-model.md")
-        foreach ($file in $featureFiles) {
-            $filePath = Join-Path $featurePath $file
-            if (Test-Path $filePath -PathType Leaf) {
-                $Result.AVAILABLE_DOCS += $file
-            }
-        }
-        
-        # 檢查 contracts 子目錄
-        $contractsDir = Join-Path $featurePath "contracts"
-        if (Test-Path $contractsDir -PathType Container) {
-            $contractFiles = Get-ChildItem -Path $contractsDir -Filter "*.md" -File
-            foreach ($cf in $contractFiles) {
-                $Result.AVAILABLE_DOCS += "contracts/$($cf.Name)"
-            }
-        }
-    } else {
-        $Result.ERRORS += "Feature directory not found: $FeatureDir"
-        $Result.STATUS = "WARNING"
-    }
-} else {
-    # 嘗試自動偵測 Feature 目錄（從 Git 分支名稱）
-    try {
-        $branch = git -C $ProjectRoot rev-parse --abbrev-ref HEAD 2>$null
-        if ($branch -and $branch -ne "main" -and $branch -ne "master") {
-            # 嘗試匹配 feature 目錄
-            $featuresDir = Join-Path $ProjectRoot "specs/features"
-            if (Test-Path $featuresDir) {
-                $matchingDirs = Get-ChildItem -Path $featuresDir -Directory | Where-Object {
-                    $branch -like "*$($_.Name)*" -or $_.Name -like "*$branch*"
-                }
-                if ($matchingDirs.Count -eq 1) {
-                    $Result.FEATURE_DIR = $matchingDirs[0].FullName
-                }
-            }
-        }
-    } catch {
-        # 忽略 Git 錯誤
-    }
+    exit 0
 }
 
-# 輸出結果
+# Validate required directories and files
+if (-not (Test-Path $paths.FEATURE_DIR -PathType Container)) {
+    Write-Output "ERROR: Feature directory not found: $($paths.FEATURE_DIR)"
+    Write-Output "Run /speckit.specify first to create the feature structure."
+    exit 1
+}
+
+if (-not (Test-Path $paths.IMPL_PLAN -PathType Leaf)) {
+    Write-Output "ERROR: plan.md not found in $($paths.FEATURE_DIR)"
+    Write-Output "Run /speckit.plan first to create the implementation plan."
+    exit 1
+}
+
+# Check for tasks.md if required
+if ($RequireTasks -and -not (Test-Path $paths.TASKS -PathType Leaf)) {
+    Write-Output "ERROR: tasks.md not found in $($paths.FEATURE_DIR)"
+    Write-Output "Run /speckit.tasks first to create the task list."
+    exit 1
+}
+
+# Build list of available documents
+$docs = @()
+
+# Always check these optional docs
+if (Test-Path $paths.RESEARCH) { $docs += 'research.md' }
+if (Test-Path $paths.DATA_MODEL) { $docs += 'data-model.md' }
+
+# Check contracts directory (only if it exists and has files)
+if ((Test-Path $paths.CONTRACTS_DIR) -and (Get-ChildItem -Path $paths.CONTRACTS_DIR -ErrorAction SilentlyContinue | Select-Object -First 1)) { 
+    $docs += 'contracts/' 
+}
+
+if (Test-Path $paths.QUICKSTART) { $docs += 'quickstart.md' }
+
+# Include tasks.md if requested and it exists
+if ($IncludeTasks -and (Test-Path $paths.TASKS)) { 
+    $docs += 'tasks.md' 
+}
+
+# Output results
 if ($Json) {
-    $Result | ConvertTo-Json -Depth 4
+    # JSON output
+    [PSCustomObject]@{ 
+        FEATURE_DIR = $paths.FEATURE_DIR
+        AVAILABLE_DOCS = $docs 
+    } | ConvertTo-Json -Compress
 } else {
-    Write-Host "========================================" -ForegroundColor Cyan
-    Write-Host "Speckit Prerequisites Check" -ForegroundColor Cyan
-    Write-Host "========================================" -ForegroundColor Cyan
-    Write-Host ""
-    Write-Host "Project Root: $($Result.PROJECT_ROOT)" -ForegroundColor White
-    Write-Host "Feature Dir:  $($Result.FEATURE_DIR)" -ForegroundColor White
-    Write-Host "Status:       $($Result.STATUS)" -ForegroundColor $(if ($Result.STATUS -eq "OK") { "Green" } else { "Red" })
-    Write-Host ""
+    # Text output
+    Write-Output "FEATURE_DIR:$($paths.FEATURE_DIR)"
+    Write-Output "AVAILABLE_DOCS:"
     
-    Write-Host "Directory Structure:" -ForegroundColor Yellow
-    foreach ($key in $Result.CHECKS.DirectoryStructure.Keys | Sort-Object) {
-        $status = if ($Result.CHECKS.DirectoryStructure[$key]) { "✅" } else { "❌" }
-        Write-Host "  $status $key"
+    # Show status of each potential document
+    Test-FileExists -Path $paths.RESEARCH -Description 'research.md' | Out-Null
+    Test-FileExists -Path $paths.DATA_MODEL -Description 'data-model.md' | Out-Null
+    Test-DirHasFiles -Path $paths.CONTRACTS_DIR -Description 'contracts/' | Out-Null
+    Test-FileExists -Path $paths.QUICKSTART -Description 'quickstart.md' | Out-Null
+    
+    if ($IncludeTasks) {
+        Test-FileExists -Path $paths.TASKS -Description 'tasks.md' | Out-Null
     }
-    Write-Host ""
-    
-    Write-Host "System Files:" -ForegroundColor Yellow
-    foreach ($key in $Result.CHECKS.SystemFiles.Keys | Sort-Object) {
-        $status = if ($Result.CHECKS.SystemFiles[$key]) { "✅" } else { "⚠️" }
-        Write-Host "  $status $key"
-    }
-    Write-Host ""
-    
-    if ($Result.AVAILABLE_DOCS.Count -gt 0) {
-        Write-Host "Available Docs:" -ForegroundColor Yellow
-        foreach ($doc in $Result.AVAILABLE_DOCS) {
-            Write-Host "  📄 $doc"
-        }
-        Write-Host ""
-    }
-    
-    if ($Result.ERRORS.Count -gt 0) {
-        Write-Host "Errors:" -ForegroundColor Red
-        foreach ($err in $Result.ERRORS) {
-            Write-Host "  ❌ $err"
-        }
-    }
-    
-    Write-Host "========================================" -ForegroundColor Cyan
 }

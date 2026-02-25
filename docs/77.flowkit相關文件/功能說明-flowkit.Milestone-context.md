@@ -76,6 +76,20 @@ PRD 撰寫完成
 
 ## 使用方式
 
+### `--default` 模式
+
+> 📝 詳細說明請參考 [功能說明-default-mode.md](./功能說明-default-mode.md)
+
+**特殊行為**：`--default` 等同於 `--milestone`（不指定編號），自動取編號最大的 Milestone。
+
+```bash
+# GitHub Copilot Agent 模式
+@workspace /flowkit.Milestone-context --default
+
+# 等同於
+/flowkit.Milestone-context
+```
+
 ### CLI 風格
 
 ```bash

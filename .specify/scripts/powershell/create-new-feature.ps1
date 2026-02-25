@@ -1,273 +1,314 @@
-<#
-.SYNOPSIS
-    建立新的 Feature 分支與目錄結構
-.DESCRIPTION
-    自動建立 Feature 分支並初始化必要的 spec.md, plan.md, tasks.md 檔案
-.PARAMETER FeatureName
-    Feature 名稱（必填）
-.PARAMETER FeatureNumber
-    Feature 編號（選用，預設自動遞增）
-.EXAMPLE
-    .\create-new-feature.ps1 -FeatureName "user-authentication"
-    .\create-new-feature.ps1 -FeatureName "payment-integration" -FeatureNumber 5
-#>
-
+#!/usr/bin/env pwsh
+# Create a new feature
+[CmdletBinding()]
 param(
-    [Parameter(Mandatory=$true)]
-    [string]$FeatureName,
-    
-    [int]$FeatureNumber = 0
+    [switch]$Json,
+    [string]$ShortName,
+    [int]$Number = 0,
+    [switch]$Help,
+    [Parameter(ValueFromRemainingArguments = $true)]
+    [string[]]$FeatureDescription
 )
+$ErrorActionPreference = 'Stop'
 
-# 取得專案根目錄
-$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$ProjectRoot = (Get-Item $ScriptDir).Parent.Parent.Parent.FullName
-
-# 切換到專案根目錄
-Push-Location $ProjectRoot
-
-try {
-    # 檢查 Git 狀態
-    $gitStatus = git status --porcelain 2>$null
-    if ($LASTEXITCODE -ne 0) {
-        Write-Error "Not a git repository or git is not available"
-        exit 1
-    }
-    
-    if ($gitStatus) {
-        Write-Warning "Working directory has uncommitted changes. Please commit or stash them first."
-        $continue = Read-Host "Continue anyway? (y/N)"
-        if ($continue -ne "y" -and $continue -ne "Y") {
-            exit 0
-        }
-    }
-    
-    # 決定 Feature 編號
-    if ($FeatureNumber -eq 0) {
-        $featuresDir = Join-Path $ProjectRoot "specs/features"
-        if (Test-Path $featuresDir) {
-            $existingFeatures = Get-ChildItem -Path $featuresDir -Directory | 
-                Where-Object { $_.Name -match "^\d+-" } |
-                ForEach-Object { [int]($_.Name -split "-")[0] } |
-                Sort-Object -Descending
-            
-            if ($existingFeatures.Count -gt 0) {
-                $FeatureNumber = $existingFeatures[0] + 1
-            } else {
-                $FeatureNumber = 1
-            }
-        } else {
-            $FeatureNumber = 1
-        }
-    }
-    
-    # 建立目錄名稱
-    $featureDirName = "$FeatureNumber-$FeatureName"
-    $featurePath = Join-Path $ProjectRoot "specs/features/$featureDirName"
-    $branchName = "$FeatureNumber-$FeatureName"
-    
-    Write-Host "========================================" -ForegroundColor Cyan
-    Write-Host "Creating New Feature" -ForegroundColor Cyan
-    Write-Host "========================================" -ForegroundColor Cyan
-    Write-Host ""
-    Write-Host "Feature Name:   $FeatureName" -ForegroundColor White
-    Write-Host "Feature Number: $FeatureNumber" -ForegroundColor White
-    Write-Host "Directory:      specs/features/$featureDirName" -ForegroundColor White
-    Write-Host "Branch:         $branchName" -ForegroundColor White
-    Write-Host ""
-    
-    # 確認
-    $confirm = Read-Host "Proceed? (Y/n)"
-    if ($confirm -eq "n" -or $confirm -eq "N") {
-        Write-Host "Cancelled." -ForegroundColor Yellow
-        exit 0
-    }
-    
-    # 建立 Git 分支
-    Write-Host "Creating git branch..." -ForegroundColor Yellow
-    git checkout -b $branchName
-    if ($LASTEXITCODE -ne 0) {
-        Write-Error "Failed to create git branch"
-        exit 1
-    }
-    
-    # 建立目錄
-    Write-Host "Creating feature directory..." -ForegroundColor Yellow
-    New-Item -ItemType Directory -Path $featurePath -Force | Out-Null
-    New-Item -ItemType Directory -Path "$featurePath/checklists" -Force | Out-Null
-    
-    # 取得模板
-    $specTemplatePath = Join-Path $ProjectRoot ".specify/templates/spec-template.md"
-    $planTemplatePath = Join-Path $ProjectRoot ".specify/templates/plan-template.md"
-    $tasksTemplatePath = Join-Path $ProjectRoot ".specify/templates/tasks-template.md"
-    
-    # 建立 spec.md
-    if (Test-Path $specTemplatePath) {
-        $specContent = Get-Content $specTemplatePath -Raw
-        $specContent = $specContent -replace '\{FEATURE_ID\}', $featureDirName
-        $specContent = $specContent -replace '\{FEATURE_NAME\}', $FeatureName
-        $specContent = $specContent -replace '\{DATE\}', (Get-Date -Format "yyyy-MM-dd")
-    } else {
-        $specContent = @"
-# Feature Specification: $FeatureName
-
-> **Feature ID**: $featureDirName  
-> **Status**: Draft  
-> **Created**: $(Get-Date -Format "yyyy-MM-dd")  
-> **Last Updated**: $(Get-Date -Format "yyyy-MM-dd")
-
----
-
-## 1. Feature Overview
-
-### 1.1 Problem Statement
-
-<!-- 描述要解決的問題 -->
-
-### 1.2 Goal
-
-<!-- 本 Feature 的目標 -->
-
-### 1.3 Success Criteria
-
-| 指標 | 目標值 | 驗證方式 |
-|------|--------|----------|
-| - | - | - |
-
----
-
-## 2. User Stories
-
-### US1: [Story Name]
-
-**As a** [角色]  
-**I want** [目標]  
-**So that** [價值]
-
-#### Acceptance Criteria
-
-- **AC1 — [標題]**
-    - Given [前置條件]
-    - When [觸發動作]
-    - Then [預期結果]
-
----
-
-## 3. Assumptions
-
-1. <!-- 假設條件 -->
-
----
-
-## 4. Dependencies
-
-- <!-- 依賴項目 -->
-
----
-
-## 5. Out of Scope
-
-1. <!-- 不在範圍內的項目 -->
-"@
-    }
-    Set-Content -Path "$featurePath/spec.md" -Value $specContent -Encoding UTF8
-    
-    # 建立 plan.md
-    if (Test-Path $planTemplatePath) {
-        $planContent = Get-Content $planTemplatePath -Raw
-        $planContent = $planContent -replace '\{FEATURE_ID\}', $featureDirName
-        $planContent = $planContent -replace '\{FEATURE_NAME\}', $FeatureName
-        $planContent = $planContent -replace '\{DATE\}', (Get-Date -Format "yyyy-MM-dd")
-    } else {
-        $planContent = @"
-# Implementation Plan: $FeatureName
-
-> **Feature ID**: $featureDirName  
-> **Plan Version**: 1.0  
-> **Created**: $(Get-Date -Format "yyyy-MM-dd")  
-> **Spec Reference**: [spec.md](./spec.md)
-
----
-
-## 1. Technical Context
-
-<!-- 技術背景與分析 -->
-
----
-
-## 2. Detailed Design
-
-<!-- 詳細設計 -->
-
----
-
-## 3. Risk Assessment
-
-| 風險 | 可能性 | 影響 | 緩解措施 |
-|------|--------|------|----------|
-| - | - | - | - |
-
----
-
-## 4. Test Strategy
-
-<!-- 測試策略 -->
-"@
-    }
-    Set-Content -Path "$featurePath/plan.md" -Value $planContent -Encoding UTF8
-    
-    # 建立 tasks.md
-    if (Test-Path $tasksTemplatePath) {
-        $tasksContent = Get-Content $tasksTemplatePath -Raw
-        $tasksContent = $tasksContent -replace '\{FEATURE_ID\}', $featureDirName
-        $tasksContent = $tasksContent -replace '\{FEATURE_NAME\}', $FeatureName
-        $tasksContent = $tasksContent -replace '\{DATE\}', (Get-Date -Format "yyyy-MM-dd")
-    } else {
-        $tasksContent = @"
-# Tasks: $FeatureName
-
-> **Feature ID**: $featureDirName  
-> **Created**: $(Get-Date -Format "yyyy-MM-dd")  
-> **Spec Reference**: [spec.md](./spec.md)  
-> **Plan Reference**: [plan.md](./plan.md)
-
----
-
-## Phase 1: Setup
-
-- [ ] T001 [任務描述]
-
----
-
-## Phase 2: Implementation
-
-- [ ] T002 [US1] [任務描述]
-
----
-
-## Phase 3: Verification
-
-- [ ] T003 執行測試驗證
-"@
-    }
-    Set-Content -Path "$featurePath/tasks.md" -Value $tasksContent -Encoding UTF8
-    
-    Write-Host ""
-    Write-Host "========================================" -ForegroundColor Green
-    Write-Host "Feature Created Successfully!" -ForegroundColor Green
-    Write-Host "========================================" -ForegroundColor Green
-    Write-Host ""
-    Write-Host "Created files:" -ForegroundColor Yellow
-    Write-Host "  📄 specs/features/$featureDirName/spec.md"
-    Write-Host "  📄 specs/features/$featureDirName/plan.md"
-    Write-Host "  📄 specs/features/$featureDirName/tasks.md"
-    Write-Host ""
-    Write-Host "Next steps:" -ForegroundColor Yellow
-    Write-Host "  1. Edit spec.md to define the feature specification"
-    Write-Host "  2. Run /speckit.plan to create implementation plan"
-    Write-Host "  3. Run /speckit.tasks to generate task list"
-    Write-Host ""
-    
-} finally {
-    Pop-Location
+# Fix encoding for Chinese/Unicode paths
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$OutputEncoding = [System.Text.Encoding]::UTF8
+if ($PSVersionTable.PSVersion.Major -ge 6) {
+    $PSDefaultParameterValues['*:Encoding'] = 'utf8'
 }
+
+# Show help if requested
+if ($Help) {
+    Write-Host "Usage: ./create-new-feature.ps1 [-Json] [-ShortName <name>] [-Number N] <feature description>"
+    Write-Host ""
+    Write-Host "Options:"
+    Write-Host "  -Json               Output in JSON format"
+    Write-Host "  -ShortName <name>   Provide a custom short name (2-4 words) for the branch"
+    Write-Host "  -Number N           Specify branch number manually (overrides auto-detection)"
+    Write-Host "  -Help               Show this help message"
+    Write-Host ""
+    Write-Host "Examples:"
+    Write-Host "  ./create-new-feature.ps1 'Add user authentication system' -ShortName 'user-auth'"
+    Write-Host "  ./create-new-feature.ps1 'Implement OAuth2 integration for API'"
+    exit 0
+}
+
+# Check if feature description provided
+if (-not $FeatureDescription -or $FeatureDescription.Count -eq 0) {
+    Write-Error "Usage: ./create-new-feature.ps1 [-Json] [-ShortName <name>] <feature description>"
+    exit 1
+}
+
+$featureDesc = ($FeatureDescription -join ' ').Trim()
+
+# Resolve repository root. Prefer git information when available, but fall back
+# to searching for repository markers so the workflow still functions in repositories that
+# were initialized with --no-git.
+function Find-RepositoryRoot {
+    param(
+        [string]$StartDir,
+        [string[]]$Markers = @('.git', '.specify')
+    )
+    $current = Resolve-Path $StartDir
+    while ($true) {
+        foreach ($marker in $Markers) {
+            if (Test-Path (Join-Path $current $marker)) {
+                return $current
+            }
+        }
+        $parent = Split-Path $current -Parent
+        if ($parent -eq $current) {
+            # Reached filesystem root without finding markers
+            return $null
+        }
+        $current = $parent
+    }
+}
+
+function Get-HighestNumberFromSpecs {
+    param([string]$SpecsDir)
+    
+    $highest = 0
+    if (Test-Path $SpecsDir) {
+        Get-ChildItem -Path $SpecsDir -Directory | ForEach-Object {
+            if ($_.Name -match '^(\d+)') {
+                $num = [int]$matches[1]
+                if ($num -gt $highest) { $highest = $num }
+            }
+        }
+    }
+    return $highest
+}
+
+function Get-HighestNumberFromBranches {
+    param()
+    
+    $highest = 0
+    try {
+        $branches = git branch -a 2>$null
+        if ($LASTEXITCODE -eq 0) {
+            foreach ($branch in $branches) {
+                # Clean branch name: remove leading markers and remote prefixes
+                $cleanBranch = $branch.Trim() -replace '^\*?\s+', '' -replace '^remotes/[^/]+/', ''
+                
+                # Extract feature number if branch matches pattern ###-*
+                if ($cleanBranch -match '^(\d+)-') {
+                    $num = [int]$matches[1]
+                    if ($num -gt $highest) { $highest = $num }
+                }
+            }
+        }
+    } catch {
+        # If git command fails, return 0
+        Write-Verbose "Could not check Git branches: $_"
+    }
+    return $highest
+}
+
+function Get-NextBranchNumber {
+    param(
+        [string]$SpecsDir,
+        [string]$HistoryDir
+    )
+
+    # Fetch all remotes to get latest branch info (suppress errors if no remotes)
+    try {
+        git fetch --all --prune 2>$null | Out-Null
+    } catch {
+        # Ignore fetch errors
+    }
+
+    # Get highest number from ALL branches (not just matching short name)
+    $highestBranch = Get-HighestNumberFromBranches
+
+    # Get highest number from specs/features/ (not just matching short name)
+    $highestSpec = Get-HighestNumberFromSpecs -SpecsDir $SpecsDir
+
+    # Get highest number from specs/history/ (not just matching short name)
+    $highestHistory = Get-HighestNumberFromSpecs -SpecsDir $HistoryDir
+
+    # Take the maximum of all three sources
+    $maxNum = [Math]::Max([Math]::Max($highestBranch, $highestSpec), $highestHistory)
+
+    # Return next number
+    return $maxNum + 1
+}
+
+function ConvertTo-CleanBranchName {
+    param([string]$Name)
+    
+    return $Name.ToLower() -replace '[^a-z0-9]', '-' -replace '-{2,}', '-' -replace '^-', '' -replace '-$', ''
+}
+$fallbackRoot = (Find-RepositoryRoot -StartDir $PSScriptRoot)
+if (-not $fallbackRoot) {
+    Write-Error "Error: Could not determine repository root. Please run this script from within the repository."
+    exit 1
+}
+
+# Try Git first, but convert path to PowerShell format immediately
+try {
+    $gitRoot = git rev-parse --show-toplevel 2>$null
+    if ($LASTEXITCODE -eq 0) {
+        # Convert Git's forward-slash path to Windows path and resolve to full path
+        # This avoids encoding issues with Git output
+        $repoRoot = (Resolve-Path -LiteralPath $gitRoot.Replace('/', [IO.Path]::DirectorySeparatorChar)).Path
+        $hasGit = $true
+    } else {
+        throw "Git not available"
+    }
+} catch {
+    # Use fallback which is already a proper PowerShell path
+    $repoRoot = $fallbackRoot.Path
+    $hasGit = $false
+}
+
+# Use -LiteralPath to handle paths with special characters (including Chinese)
+Set-Location -LiteralPath $repoRoot
+
+# constitution.md §1.0: Feature 目錄 MUST 位於 specs/features/ 下
+$specsDir = Join-Path $repoRoot 'specs' 'features'
+New-Item -ItemType Directory -Path $specsDir -Force | Out-Null
+
+# History 目錄用於計算最高編號
+$historyDir = Join-Path $repoRoot 'specs' 'history'
+
+# Function to generate branch name with stop word filtering and length filtering
+function Get-BranchName {
+    param([string]$Description)
+    
+    # Common stop words to filter out
+    $stopWords = @(
+        'i', 'a', 'an', 'the', 'to', 'for', 'of', 'in', 'on', 'at', 'by', 'with', 'from',
+        'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had',
+        'do', 'does', 'did', 'will', 'would', 'should', 'could', 'can', 'may', 'might', 'must', 'shall',
+        'this', 'that', 'these', 'those', 'my', 'your', 'our', 'their',
+        'want', 'need', 'add', 'get', 'set'
+    )
+    
+    # Convert to lowercase and extract words (alphanumeric only)
+    $cleanName = $Description.ToLower() -replace '[^a-z0-9\s]', ' '
+    $words = $cleanName -split '\s+' | Where-Object { $_ }
+    
+    # Filter words: remove stop words and words shorter than 3 chars (unless they're uppercase acronyms in original)
+    $meaningfulWords = @()
+    foreach ($word in $words) {
+        # Skip stop words
+        if ($stopWords -contains $word) { continue }
+        
+        # Keep words that are length >= 3 OR appear as uppercase in original (likely acronyms)
+        if ($word.Length -ge 3) {
+            $meaningfulWords += $word
+        } elseif ($Description -match "\b$($word.ToUpper())\b") {
+            # Keep short words if they appear as uppercase in original (likely acronyms)
+            $meaningfulWords += $word
+        }
+    }
+    
+    # If we have meaningful words, use first 3-4 of them
+    if ($meaningfulWords.Count -gt 0) {
+        $maxWords = if ($meaningfulWords.Count -eq 4) { 4 } else { 3 }
+        $result = ($meaningfulWords | Select-Object -First $maxWords) -join '-'
+        return $result
+    } else {
+        # Fallback to original logic if no meaningful words found
+        $result = ConvertTo-CleanBranchName -Name $Description
+        $fallbackWords = ($result -split '-') | Where-Object { $_ } | Select-Object -First 3
+        if ($fallbackWords.Count -eq 0) {
+            # All characters were non-ASCII (e.g., Chinese-only description)
+            return 'feature'
+        }
+        return [string]::Join('-', $fallbackWords)
+    }
+}
+
+# Generate branch name
+if ($ShortName) {
+    # Use provided short name, just clean it up
+    $branchSuffix = ConvertTo-CleanBranchName -Name $ShortName
+} else {
+    # Generate from description with smart filtering
+    $branchSuffix = Get-BranchName -Description $featureDesc
+}
+
+# Final safety net: ensure branch suffix is never empty
+if (-not $branchSuffix) {
+    $branchSuffix = 'feature'
+}
+
+# Determine branch number
+if ($Number -eq 0) {
+    if ($hasGit) {
+        # Check existing branches on remotes and both specs directories
+        $Number = Get-NextBranchNumber -SpecsDir $specsDir -HistoryDir $historyDir
+    } else {
+        # Fall back to local directory check (check both features and history)
+        $highestFeature = Get-HighestNumberFromSpecs -SpecsDir $specsDir
+        $highestHistory = Get-HighestNumberFromSpecs -SpecsDir $historyDir
+        $Number = [Math]::Max($highestFeature, $highestHistory) + 1
+    }
+}
+
+$featureNum = ('{0:000}' -f $Number)
+$branchName = "$featureNum-$branchSuffix"
+
+# GitHub enforces a 244-byte limit on branch names
+# Validate and truncate if necessary
+$maxBranchLength = 244
+if ($branchName.Length -gt $maxBranchLength) {
+    # Calculate how much we need to trim from suffix
+    # Account for: feature number (3) + hyphen (1) = 4 chars
+    $maxSuffixLength = $maxBranchLength - 4
+    
+    # Truncate suffix
+    $truncatedSuffix = $branchSuffix.Substring(0, [Math]::Min($branchSuffix.Length, $maxSuffixLength))
+    # Remove trailing hyphen if truncation created one
+    $truncatedSuffix = $truncatedSuffix -replace '-$', ''
+    
+    $originalBranchName = $branchName
+    $branchName = "$featureNum-$truncatedSuffix"
+    
+    Write-Warning "[specify] Branch name exceeded GitHub's 244-byte limit"
+    Write-Warning "[specify] Original: $originalBranchName ($($originalBranchName.Length) bytes)"
+    Write-Warning "[specify] Truncated to: $branchName ($($branchName.Length) bytes)"
+}
+
+if ($hasGit) {
+    git checkout -b $branchName 2>$null
+    if ($LASTEXITCODE -ne 0) {
+        Write-Warning "Failed to create git branch: $branchName (may already exist or other git error)"
+    }
+} else {
+    Write-Warning "[specify] Warning: Git repository not detected; skipped branch creation for $branchName"
+}
+
+$featureDir = Join-Path $specsDir $branchName
+New-Item -ItemType Directory -Path $featureDir -Force | Out-Null
+
+$template = Join-Path $repoRoot '.specify/templates/spec-template.md'
+$specFile = Join-Path $featureDir 'spec.md'
+if (Test-Path $template) { 
+    Copy-Item $template $specFile -Force 
+} else { 
+    New-Item -ItemType File -Path $specFile | Out-Null 
+}
+
+# Set the SPECIFY_FEATURE environment variable for the current session
+$env:SPECIFY_FEATURE = $branchName
+
+if ($Json) {
+    $obj = [PSCustomObject]@{ 
+        BRANCH_NAME = $branchName
+        SPEC_FILE = $specFile
+        FEATURE_NUM = $featureNum
+        HAS_GIT = $hasGit
+    }
+    $obj | ConvertTo-Json -Compress
+} else {
+    Write-Output "BRANCH_NAME: $branchName"
+    Write-Output "SPEC_FILE: $specFile"
+    Write-Output "FEATURE_NUM: $featureNum"
+    Write-Output "HAS_GIT: $hasGit"
+    Write-Output "SPECIFY_FEATURE environment variable set to: $branchName"
+}
+

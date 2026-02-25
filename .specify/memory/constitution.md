@@ -1,9 +1,9 @@
 # Project Constitution（簡化版）
 ## SpecKit Plan / Analyze 階段專用
 
-> **版本**：v1.0.0  
+> **版本**：v1.1.0  
 > **批准日期**：2026-01-21  
-> **最後修訂**：2026-01-21  
+> **最後修訂**：2026-02-25  
 > **文件性質**：SpecKit 流程中 Plan 填寫與 Analyze 檢驗的核心準則  
 > **語言規範**：關鍵字（MUST / SHOULD / MAY）維持英文，其餘使用繁體中文  
 
@@ -122,6 +122,25 @@ directory = ".artifacts/coverage/html"
 | `contracts/` | Webhook / API / Schema 介面契約 |
 | `flows.md` | 系統流程圖、狀態流轉 |
 | `ui/` | UI/UX Design Authority |
+
+---
+
+## §1.5 Feature Spec Status 生命週期 🟡
+
+Feature Spec 的 `status` 欄位記錄於 YAML frontmatter，由指令化流程自動管理：
+
+| 狀態 | 設定時機 | 設定者 |
+|------|----------|--------|
+| `Draft` | `speckit.specify` 建立 Feature Spec 時 | `specify`（範本預設值） |
+| `In Progress` | `speckit.implement` 開始實作時（Step 1.6） | `implement` |
+| `Implemented` | `speckit.implement` 完成所有 Tasks 後（Step 11） | `implement` |
+| `Unified` | `flowkit.unify-flow` Phase 4 封存前 | `unify-flow` |
+
+**MUST 要求**：
+- 狀態變更 MUST 同時更新 YAML frontmatter `status` 欄位與 inline `> **Status**:` 標記
+- 狀態變更屬於**元資料管理**，不違反「MUST NOT 修改 spec 規格內容」原則
+
+**允許值**：`Draft` | `In Progress` | `Implemented` | `Unified`
 
 ---
 
