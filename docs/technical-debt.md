@@ -1,6 +1,6 @@
 # Technical Debt Registry
 
-> **Last Updated**: 2026-02-25
+> **Last Updated**: 2026-02-25 (pr-review 補充 TD-004/005)
 
 ---
 
@@ -11,6 +11,8 @@
 | TD-001 | MSSQL 真實資料庫整合測試 | P2 | Open |
 | TD-002 | Electron E2E 自動化測試（Playwright） | P2 | Open |
 | TD-003 | test_connection PytestReturnNotNoneWarning | P3 | Open |
+| TD-004 | CORS allow_origins 正式環境限縮 | P3 | Open |
+| TD-005 | ChartService 改用 FastAPI Depends DI 模式 | P3 | Open |
 
 ---
 
@@ -85,6 +87,54 @@
 **建議解法**: 將 `return result` 改為 `assert result`。成本 EASY（1 行）。
 
 **相關檔案**: `tests/unit/test_db_connection.py`
+
+---
+
+### TD-004: CORS allow_origins 正式環境限縮
+
+- **Priority**: P3
+- **Type**: security
+- **Status**: Open
+- **Created**: 2026-02-25
+- **Source**: pr-review
+- **Feature-Origin**: 001-basic-chart-api
+- **Milestone-Candidate**: false
+- **Dedup-Key**: `security:src/main.py:cors-wildcard`
+- **Evidence-Ref**: `.artifacts/pr-review-report-feature-001.md`
+- **Detection-Count**: 1
+- **Last-Detected**: 2026-02-25
+
+**描述**: `src/main.py` 中 `allow_origins=["*"]` 使用萬用字元，任何本機網頁皆可呼叫 API（即使是桌面 Electron 應用程式也存在潛在風險）。代碼已有備注「正式環境需限制」。
+
+**影響範圍**: `src/main.py`（CORS 設定）
+
+**建議解法**: 透過環境變數 `CORS_ALLOWED_ORIGINS` 設定允許來源清單（預設 `["http://localhost:5173", "http://127.0.0.1:5173"]`），正式 Electron 打包環境改為 `file://`。
+
+**相關檔案**: `src/main.py`, `.env.example`
+
+---
+
+### TD-005: ChartService 改用 FastAPI Depends DI 模式
+
+- **Priority**: P3
+- **Type**: design-debt
+- **Status**: Open
+- **Created**: 2026-02-25
+- **Source**: pr-review
+- **Feature-Origin**: 001-basic-chart-api
+- **Milestone-Candidate**: false
+- **Dedup-Key**: `design-debt:src/api/routes/chart.py`
+- **Evidence-Ref**: `.artifacts/pr-review-report-feature-001.md`
+- **Detection-Count**: 1
+- **Last-Detected**: 2026-02-25
+
+**描述**: `src/api/routes/chart.py` 的 `get_daily_chart` handler 內直接 `service = ChartService()` 實例化，而非使用 FastAPI 推薦的 `Depends()` 依賴注入機制。目前可藉由 `@patch` mocker 測試，但耦合到具體類別而非介面。
+
+**影響範圍**: `src/api/routes/chart.py`
+
+**建議解法**: 新增 `get_chart_service()` 工廠函式，route 改為 `service: ChartService = Depends(get_chart_service)`，測試改用 `app.dependency_overrides`。
+
+**相關檔案**: `src/api/routes/chart.py`, `tests/integration/test_chart_api.py`
 
 ---
 
