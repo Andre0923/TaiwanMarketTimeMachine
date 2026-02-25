@@ -92,6 +92,13 @@
 - **When** API 新增功能
 - **Then** 既有欄位的資料型別與語意不得改變（向下相容）
 
+**AC6 — Chart API 格式規範（M01 已交付）**
+- **Given** 前端呼叫圖表資料查詢 API（`GET /api/chart/daily`）
+- **When** 後端回傳圖表資料
+- **Then** Response 必須包含：`stock_code`（股票代碼）、`chart_data`（K 線資料陣列，每筆含 `time`/`open`/`high`/`low`/`close`/`volume` 欄位）、`metadata`（含 `start_date`/`end_date`/`data_points` 查詢元資訊）
+
+> **備註**：AC1 定義的完整策略 Grid 格式（`event_window`/`horizons`/`samples`/`metrics`）適用於未來 M03+ 的 Strategy Grid API，與本 AC6 的圖表專用 API 為不同端點。
+
 ---
 
 ## 技術備註

@@ -30,9 +30,9 @@
 | US ID | 摘要 | Group | 狀態 |
 |-------|------|-------|------|
 | US A-1 | K 線與成交量基礎繪圖 | A | ✅ M01 已完成 |
-| US A-2 | 圖表互動操作（Zoom/Pan/Crosshair） | A | 🧩 M02 執行中 |
-| US A-3 | 小圖點擊放大檢視 | A | 🧩 M02 執行中 |
-| US A-4 | 圖表載入狀態與錯誤處理 | A | 🧩 M02 執行中 |
+| US A-2 | 圖表互動操作（Zoom/Pan/Crosshair） | A | ✅ 已完成 |
+| US A-3 | 小圖點擊放大檢視 | A | ✅ 已完成 |
+| US A-4 | 圖表載入狀態與錯誤處理 | A | ✅ 已完成 |
 | US B-1 | 結構化條件查詢 | B | ⏳ 尚未規劃 |
 | US B-2 | Grid 多圖並列顯示 | B | ⏳ 尚未規劃 |
 | US B-3 | 事件日置中對齊 | B | ⏳ 尚未規劃 |
@@ -50,43 +50,43 @@
 | US F-1 | 自然語言轉 SQL 查詢 | F | ⏳ 尚未規劃 |
 | US F-2 | AI 生成 SQL 驗證與修正 | F | ⏳ 尚未規劃 |
 | US G-1 | 查詢結果快取機制 | G | ⏳ 尚未規劃 |
-| US G-2 | API Response 固定格式設計 | G | 🧩 M01 執行中 |
+| US G-2 | API Response 固定格式設計 | G | ✅ 已完成 |
 
 ---
 
 ## 📊 狀態快照（Status Snapshot）
 
-> **更新時間**：2026-02-04
+> **更新時間**：2026-02-25
 
 ### 狀態統計
 
 | 狀態 | 圖示 | 數量 | 百分比 |
 |------|------|------|--------|
 | 尚未規劃 | ⏳ | 17 | 77% |
-| Milestone 執行中 | 🧩 | 3 | 14% |
+| Milestone 執行中 | 🧩 | 0 | 0% |
 | 部分完成 | 🔶 | 0 | 0% |
-| 已完成 | ✅ | 2 | 9% |
+| 已完成 | ✅ | 5 | 23% |
 
 ---
 
 ### 依狀態分類
 
-#### ✅ 已完成（2 個）
+#### ✅ 已完成（5 個）
 
-**Group A — 基礎繪圖與互動**（Milestone M01）
-- US A-1（K 線與成交量基礎繪圖 - Backend）
+**Group A — 基礎繪圖與互動**
+- US A-1（K 線與成交量基礎繪圖 - Backend）（Milestone M01）
+- US A-2（圖表互動操作）（Milestone M02）
+- US A-3（小圖點擊放大檢視）（Milestone M02）
+- US A-4（圖表載入狀態與錯誤處理）（Milestone M02）
 
 **Group G — 效能與快取機制**（Milestone M01）
 - US G-2（API Response 格式設計）
 
 ---
 
-#### 🧩 Milestone 執行中（3 個）
+#### 🧩 Milestone 執行中（0 個）
 
-**Group A — 基礎繪圖與互動**（Milestone M02）
-- US A-2（圖表互動操作）
-- US A-3（小圖點擊放大檢視）
-- US A-4（圖表載入狀態與錯誤處理）
+（無）
 
 #### ⏳ 尚未規劃（17 個）
 
@@ -121,19 +121,20 @@
 
 ### 進行中的 Milestone
 
-**[M02 — 前端圖表互動功能](../Milestone/M02-frontend-chart-interactions.md)** ⏳ 規劃中
+**[M02 — 前端圖表互動功能](../Milestone/M02-frontend-chart-interactions.md)** ✅ 已完成
 - 包含：US A-2, A-3, A-4
-- 狀態：已建立規劃，尚未開始開發
-- 下一步：執行 `speckit.specify` 建立 Feature Spec
+- 完成日期：2026-02-09
+- 交付：Vue 3 + Electron 前端應用 + TradingView Lightweight Charts 5.1 整合
 
 ### 規劃建議
 
 建議依以下順序規劃 Milestone：
 
-1. ✅ **M01 — 基礎繪圖與 API 格式**（已規劃）
-2. **M02 — Strategy Grid 核心**（Group B + C）
-3. **M03 — 事件研究統計**（Group D + E + US G-1）
-4. **M04 — AI 協作增強**（Group F）
+1. ✅ **M01 — 基礎繪圖與 API 格式**（已完成）
+2. ✅ **M02 — 前端圖表互動功能**（已完成）
+3. **M03 — Strategy Grid 核心**（Group B + C）
+4. **M04 — 事件研究統計**（Group D + E + US G-1）
+5. **M05 — AI 協作增強**（Group F）
 
 ---
 
