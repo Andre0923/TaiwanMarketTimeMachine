@@ -11,6 +11,7 @@ Chart Data Models.
 
 from datetime import date
 from typing import List, Optional
+
 from pydantic import BaseModel, Field, field_validator
 
 

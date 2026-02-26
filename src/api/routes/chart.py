@@ -8,12 +8,13 @@ Chart API Router.
 提供日K線圖表資料的 RESTful API 端點。
 """
 
-from fastapi import APIRouter, Query, HTTPException, status
-from typing import Optional
 import time
-from src.services.chart_service import ChartService
-from src.models.chart import ChartResponse, ErrorResponse, ErrorDetail, ErrorCodes
+
+from fastapi import APIRouter, HTTPException, Query, status
+
 from src.logger import setup_logger
+from src.models.chart import ChartResponse, ErrorCodes, ErrorResponse
+from src.services.chart_service import ChartService
 
 logger = setup_logger(__name__)
 
@@ -79,9 +80,9 @@ async def get_daily_chart(
         HTTPException: 參數錯誤、查無資料、或伺服器錯誤
     """
     request_start = time.time()
-    
+
     logger.info(
-        f"API Request: GET /api/chart/daily",
+        "API Request: GET /api/chart/daily",
         extra={
             "stock_code": stock_code,
             "start_date": start_date,
@@ -102,7 +103,7 @@ async def get_daily_chart(
         response_time = (time.time() - request_start) * 1000  # 轉為毫秒
 
         logger.info(
-            f"API Response: Success",
+            "API Response: Success",
             extra={
                 "stock_code": stock_code,
                 "data_points": len(response.chart_data),

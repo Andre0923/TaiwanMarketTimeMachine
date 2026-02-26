@@ -12,9 +12,11 @@ MSSQL Database Connection Module.
 """
 
 import os
-import pyodbc
 from typing import Optional
+
+import pyodbc
 from dotenv import load_dotenv
+
 from src.logger import setup_logger
 
 # 載入環境變數
