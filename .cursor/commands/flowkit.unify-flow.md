@@ -494,6 +494,54 @@ IF any check fails:
 
 ---
 
+### Phase 4.5：Milestone / US 狀態更新
+
+> ℹ️ **v1.5.0 新增**：Feature 封存後，自動更新 `docs/requirements` 層級的 US 和 Milestone 狀態
+
+**觸發條件**：Phase 4（封存 Feature）完成後
+
+**強度等級**：SHOULD（更新失敗不阻擋 Unify Flow 完成）
+
+**條件觸發**：僅當 `docs/requirements/user-stories/README.md` 存在時執行，不存在則跳過並記錄原因
+
+**輸入**：
+- 已封存 Feature Spec 的 YAML frontmatter（`milestone` 欄位、涉及的 US IDs）
+- `docs/requirements/user-stories/README.md`（當前狀態快照）
+- `docs/requirements/Milestone/MNN-*.md`（對應 Milestone 檔案）
+
+**執行**：
+
+1. **抽取涉及的 US IDs**：
+   - 從 Feature Spec 的 US 段落或 YAML 讀取 US 清單
+   - 從 Feature Spec 的 YAML frontmatter 讀取 `milestone` 欄位
+
+2. **更新 README.md 狀態快照**：
+   - 每個涉及的 US 狀態 🧩→✅（若該 Feature 涵蓋其所有 AC）
+   - 或 🧩→🔶（若 AC 未完全滿足 — 從 spec-delta-log 或 code-check 判斷）
+   - 更新統計數字（已完成/部分完成/執行中/待規劃）
+   - 更新版本號和最後更新日期
+
+3. **評估 Milestone 完成度**：
+   - 檢查該 Milestone 下所有 US 的狀態
+   - 若全部 US 皆為 ✅ → 建議將 `MNN-*.md` 狀態標記為 ✅ 已完成
+   - 若仍有 🧩 或 ⏳ 的 US → 維持 🧩（待後續 Feature 完成）
+   - **MUST ASK** 人類確認 Milestone 結案決定
+
+4. **更新 Milestone 檔案**（若已結案）：
+   - 更新 `MNN-*.md` 頂部狀態：🧩 → ✅
+   - 填入完成日期
+
+**輸出**：README.md 和 Milestone 狀態已更新（或無需更新的說明）
+
+**驗證**：
+- [ ] README.md 狀態快照中涉及的 US 已更新
+- [ ] README.md 統計數字正確
+- [ ] Milestone 檔案狀態已更新（若 Milestone 全部完成）
+
+**Git Checkpoint**：完成 Milestone/US 狀態更新後，執行 `git add . && git commit -m "docs: 更新 Milestone/US 狀態 [FEATURE_NAME]" && git push`。
+
+---
+
 ### Phase 5：合併操作驗證
 
 > **注意**：此階段僅驗證「合併操作本身」的正確性，非全系統一致性檢查。  
@@ -678,6 +726,75 @@ IF any check fails:
 
 ---
 
+### Phase 7.5：README 專案狀態同步
+
+> ℹ️ **v1.7.0 改版**：改為自然語言 README 生成機制，取代原 AUTO 標記方式
+
+**觸發條件**：Phase 7（TD Reconciliation）完成後
+
+**強度等級**：SHOULD（更新失敗不阻擋 Unify Flow 完成）
+
+**條件觸發**：僅當根目錄 `README.md` 存在時執行
+
+**輸入**：
+- 根目錄 `README.md`（當前內容）
+- `specs/system/spec.md`（已合併的 System Spec — User Stories 清單）
+- `docs/requirements/user-stories/README.md`（US 狀態快照，若存在）
+- `docs/requirements/Milestone/MNN-*.md`（Milestone 狀態，若存在）
+- Phase 6 統合摘要（本次變更資訊）
+- `pyproject.toml` 或 `package.json`（技術棧資訊）
+
+**執行**：
+
+1. **讀取專案上下文**：
+   - 從 System Spec、Milestone 進度、已完成 Features、技術棧等來源收集專案狀態
+   - 讀取 `README.md` 當前內容
+
+2. **辨識保護區段**：
+   - `<!-- README:FROZEN -->` ... `<!-- /README:FROZEN -->`：**完全凍結**，AI 不可修改此區塊內容
+   - `<!-- README:SYNC-ONLY -->` ... `<!-- /README:SYNC-ONLY -->`：**僅同步更新**，AI 僅可調整編號、連結、版號等引用資訊，不可改寫段落內容
+   - 無標記區段：AI 可根據專案狀態自由重寫
+
+3. **以自然語言重寫 README.md**：
+   README 風格應如一般開源專案，包含但不限於：
+   - 專案名稱 + 一句話簡介
+   - 專案描述（自然語言，2-3 段）
+   - 功能亮點 / 已完成功能
+   - 技術棧
+   - 開發進度（Milestone 表格：名稱、狀態、完成度）
+   - 安裝 / 使用指南
+   - 專案結構（精簡版目錄樹）
+   - 相關文件連結
+
+   **重寫原則**：
+   - 風格自然，像真實開源專案的 README
+   - 不使用任何 AUTO 標記或結構化報表格式
+   - 保留 FROZEN 區段原文不動
+   - SYNC-ONLY 區段僅更新引用（編號、連結、數量）
+   - 若現有 README 已夠完善，可選擇僅微調回饋本次 Feature 變更
+
+4. **直接寫入 README.md**（不需人類確認）
+
+**保護標記機制**：
+
+| 標記 | 行為 | 用途 |
+|------|------|------|
+| `<!-- README:FROZEN -->` ... `<!-- /README:FROZEN -->` | AI 完全不修改此區塊 | 人類自訂內容、授權聲明等 |
+| `<!-- README:SYNC-ONLY -->` ... `<!-- /README:SYNC-ONLY -->` | AI 僅更新引用資訊（編號、連結、版號） | 安裝指令、目錄結構等 |
+| 無標記區段 | AI 可根據專案狀態自由重寫 | 專案描述、功能列表、進度表等 |
+
+**輸出**：README.md 已更新為反映當前專案狀態的自然語言內容
+
+**驗證**：
+- [ ] README.md 內容反映當前專案狀態
+- [ ] FROZEN 區段原文未被修改
+- [ ] SYNC-ONLY 區段僅有引用更新
+- [ ] 無 Markdown 語法破壞
+
+**Git Checkpoint**：若有更新 README.md，納入後續的最終 commit。
+
+---
+
 ## 完成標準（Definition of Done）
 統合流程僅在下列條件**全部符合**時視為完成：
 
@@ -697,6 +814,9 @@ IF any check fails:
 - [ ] 統合摘要已產生
 - [ ] TD Reconciliation 已執行（或無 Open TD 而跳過）
 - [ ] Escalation Log 已完整記錄
+- [ ] README.md US 狀態已更新（若涉及 `docs/requirements`）
+- [ ] Milestone 檔案狀態已更新（若適用）
+- [ ] README.md 已同步更新為反映專案狀態的自然語言內容（FROZEN/SYNC-ONLY 區段已保護）
 
 ### 禁止殘留
 - [ ] 無未整合的 Feature Spec 留在 `specs/features/`
@@ -755,9 +875,11 @@ IF any check fails:
 | Phase 2：合併 System Spec（漸進式） | ✅/❌ | 迭代 M 次 |
 | Phase 3：更新 Design（最小範圍） | ✅/❌ | 更新 X 個檔案 |
 | Phase 4：封存 Feature | ✅/❌ | - |
+| Phase 4.5：Milestone / US 狀態更新 | ✅/❌/➖ | 條件觸發 / 跳過 |
 | Phase 5：合併操作驗證 | ✅/❌ | 迭代 K 次 |
 | Phase 6：產生摘要 | ✅/❌ | - |
 | Phase 7：TD Reconciliation | ✅/❌/➖ | N 項 Resolved / M 項 Won't Fix / 跳過 |
+| Phase 7.5：README 專案狀態同步 | ✅/➖ | 自然語言重寫完成 / README 不存在跳過 |
 
 ### Escalation Log（深讀記錄）
 | 階段 | 目標位置 | 深讀原因 | 讀取範圍 |
@@ -774,8 +896,7 @@ IF any check fails:
 
 ### 下一步
 - [ ] 檢視統合摘要
-- [ ] 提交 PR
-- [ ] 等待 Review
+- [ ] 執行 `/flowkit.pr-review` 執行六維品質審查並建立 PR
 ```
 
 ---

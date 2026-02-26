@@ -1,13 +1,10 @@
 ---
 description: 輸入 --Milestone 自動取編號最大的 Milestone MNN，從 PRD 或指定文件擷取與目標 Milestone 相關的設計上下文，並檢測與現有 System 設計的衝突。強制輸出至 docs/requirements/Milestone/MNN-context.md
 handoffs:
-  - label: 執行 Plan
-    agent: speckit.plan
-    prompt: 開始規劃實作方案
-  - label: 檢查一致性
-    agent: flowkit.consistency-check
-    prompt: 檢查 Plan 與 System 的一致性
-  - label: 建立 Milestone
+  - label: 建立 Feature 規格
+    agent: speckit.specify
+    prompt: --default
+  - label: 規劃 Milestone
     agent: flowkit.BDD-Milestone
     prompt: 幫我規劃下一個 Milestone
 ---

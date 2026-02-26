@@ -1,12 +1,12 @@
 ---
 description: Execute the implementation plan by processing and executing all tasks defined in tasks.md
 handoffs:
-  - label: 建立追溯索引
-    agent: flowkit.trace
-    prompt: 實作完成，建立規格-程式碼追溯索引
+  - label: 執行 Code Check
+    agent: flowkit.code-check
+    prompt: --default
   - label: Debug / 微調
     agent: flowkit.refine-loop
-    prompt: 實作完成後需要 debug 或微調
+    prompt: --default
 ---
 
 ## User Input

@@ -1,12 +1,12 @@
 ---
 description: --init：建立User Stroies; --milestone：自動分拆Milestone。另支援自然語言指令。
 handoffs:
-  - label: 規劃 Milestone
+  - label: 抽取設計上下文
+    agent: flowkit.Milestone-context
+    prompt: Milestone 已建立，抽取 PRD 設計上下文並檢測與 System 的衝突
+  - label: 規劃下一個 Milestone
     agent: flowkit.BDD-Milestone
     prompt: 幫我規劃下一個 Milestone
-  - label: 更新專案上下文
-    agent: flowkit.system-context
-    prompt: 更新專案上下文文件
 ---
 
 # FlowKit BDD-Milestone Builder
@@ -718,7 +718,7 @@ IF any linting check fails:
 | US A-2 | ⏳ 尚未規劃 | 🧩 M01 執行中 |
 
 ### 下一步建議
-- [ ] 將 Milestone 交付 SpecKit 進行 Feature 開發
+- [ ] 執行 `/flowkit.Milestone-context` 抽取設計上下文並檢測衝突
 - [ ] 或繼續執行 `--milestone` 規劃下一個 Milestone
 ```
 

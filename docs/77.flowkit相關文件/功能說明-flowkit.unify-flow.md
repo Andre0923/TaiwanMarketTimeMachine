@@ -159,6 +159,15 @@
                               │
                               ▼
 ┌──────────────────────────────────────────────────────────────┐
+│  Phase 4.5：Milestone / US 狀態更新（條件觸發）          │
+│  • 更新 README.md US 狀態快照（🧩→✅/🔶）               │
+│  • 評估並更新 Milestone 完成度                            │
+│  • SHOULD（失敗不阻擋 Unify Flow）                          │
+│  • Git Checkpoint                                            │
+└──────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌──────────────────────────────────────────────────────────────┐
 │  Phase 5：合併操作驗證                                        │
 │  • Feature 內容整合驗證                                       │
 │  • 保留區段完整性檢查                                         │
@@ -246,6 +255,14 @@
 
 ### Phase 4：封存 Feature
 
+**Step 0 — 更新 Feature Status 為 Unified**：
+
+在封存前，先更新 `spec.md` 的狀態元資料：
+- YAML frontmatter：`status: Unified`
+- Inline 標記：`> **Status**: Unified`
+
+> 📌 此狀態變更屬於**封存前元資料更新**，確保歷史記錄反映最終狀態。
+
 **封存方式**：移動整個 Feature 目錄至 history
 
 ```bash
@@ -280,6 +297,27 @@ specs/history/
 | US 首次出現 | 直接新增至 System 層 |
 | US 已存在 | 以 Feature 版本覆蓋（最新實作） |
 | 舊 Feature 的 US | 保留（不刪除歷史追溯） |
+
+### Phase 4.5：Milestone / US 狀態更新
+
+> ℹ️ **v1.5.0 新增**：Feature 封存後，自動更新 `docs/requirements` 層級的 US 和 Milestone 狀態
+
+**目的**：與 `flowkit.BDD-Milestone`（✓→🧩）形成互補，完成 US 狀態全生命週期自動化
+
+```
+BDD-Milestone: ⏳ → 🧩  （排入）
+unify-flow:    🧩 → ✅/🔶 （結案）
+```
+
+**條件觸發**：僅當 `docs/requirements/user-stories/README.md` 存在時執行
+
+**強度等級**：SHOULD（失敗不阻擋 Unify Flow 完成）
+
+**執行步驟**：
+1. 從 Feature Spec 抽取涉及的 US IDs 和 Milestone 欄位
+2. 更新 `README.md` US 狀態快照（🧩→✅ 或 🧩→🔶）
+3. 評估 Milestone 完成度，若全部 US ✅ 則 MUST ASK 人類確認結案
+4. 更新 Milestone 檔案狀態（若已結案）
 
 ### Phase 5：合併操作驗證
 
@@ -364,6 +402,39 @@ specs/history/
 **與 pr-review Phase 7.6 的關係**：
 - unify-flow Phase 7 是「結案通道」（唯一修改 TD Registry 的地方）
 - pr-review Phase 7.6 是「驗證閘門」（檢查結案一致性，僅產出 WARNING/INFO）
+
+### Phase 7.5：README 專案狀態同步
+
+> ℹ️ **v1.7.0 改版**：改為自然語言 README 生成機制，取代原 AUTO 標記方式
+
+**目的**：確保 README.md 始終反映專案的實際開發狀態，風格如一般開源專案的 README。
+
+**條件觸發**：僅當根目錄 `README.md` 存在時執行
+
+**強度等級**：SHOULD（失敗不阻擋 Unify Flow 完成）
+
+**自然語言重寫機制**：
+
+AI 讀取專案上下文（System Spec、Milestone 進度、已完成 Features、技術棧等）後，以自然語言重寫 README.md，內容包含但不限於：
+- 專案名稱 + 簡介
+- 功能亮點 / 已完成功能
+- 技術棧
+- 開發進度（Milestone 表格）
+- 安裝 / 使用指南
+- 專案結構 + 文件連結
+
+**重寫原則**：
+- 風格自然，像真實開源專案的 README
+- 不使用 AUTO 標記或結構化報表格式
+- 直接寫入，不需人類確認
+
+**保護標記機制**：
+
+| 標記 | 行為 | 用途 |
+|------|------|------|
+| `<!-- README:FROZEN -->` ... `<!-- /README:FROZEN -->` | AI 完全不修改此區塊 | 人類自訂內容、授權聲明等 |
+| `<!-- README:SYNC-ONLY -->` ... `<!-- /README:SYNC-ONLY -->` | AI 僅更新引用資訊（編號、連結、版號） | 安裝指令、目錄結構等 |
+| 無標記區段 | AI 可根據專案狀態自由重寫 | 專案描述、功能列表、進度表等 |
 
 ---
 
@@ -468,6 +539,9 @@ specs/history/
 - [ ] Phase 5 合併操作驗證通過
 - [ ] 統合摘要已產生
 - [ ] Escalation Log 已完整記錄
+- [ ] README.md US 狀態已更新（若涉及 `docs/requirements`）
+- [ ] Milestone 檔案狀態已更新（若適用）
+- [ ] README.md AUTO 標記區段已同步更新（若有標記）
 
 ### 禁止殘留
 - [ ] 無未整合的 Feature Spec
@@ -580,9 +654,13 @@ specs/history/
 
 | 版本 | 日期 | 變更說明 |
 |------|------|----------|
-| 1.0.0 | 2026-01-25 | 初始文件版本 |
+| 1.7.0 | 2026-02-26 | Phase 7.5 改版：自然語言 README 生成機制取代 AUTO 標記，新增 FROZEN/SYNC-ONLY 保護標記 |
+| 1.6.0 | 2026-02-26 | 新增 Phase 7.5 README 專案狀態同步（HTML Comment Markers 機制）|
+| 1.5.0 | 2026-02-25 | 新增 Phase 4.5 Milestone / US 狀態自動更新（與 BDD-Milestone 形成閉環）|
+| 1.4.0 | 2026-02-25 | Phase 4 新增 Step 0：封存前自動更新 Feature Status 為 Unified（Issue #4）|
 | 1.3.0 | 2026-02-15 | 新增 Phase 7 TD Reconciliation：Feature 完成時自動比對 TD Ref 標註與 Open TD，提議結案並更新 TD Registry |
 | 1.2.0 | 2026-02-15 | 新增 Phase 6.5 Feature Summary 自動產生（跨階段變更追蹤機制）|
+| 1.0.0 | 2026-01-25 | 初始文件版本 |
 
 ---
 

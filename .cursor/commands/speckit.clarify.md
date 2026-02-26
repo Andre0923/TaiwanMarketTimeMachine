@@ -1,9 +1,15 @@
 ---
 description: Identify underspecified areas in the current feature spec by asking up to 5 highly targeted clarification questions and encoding answers back into the spec.
 handoffs: 
+  - label: Generate System Context
+    agent: flowkit.system-context
+    prompt: |
+      建立專案 System Context，為 Plan 階段準備上下文。
+      
+      **建議必要**（除非是第一個 Feature）。執行完成後請將 spec.md frontmatter 的 `system_context` 設為 `true`。
   - label: Build Technical Plan
     agent: speckit.plan
-    prompt: Create a plan for the spec. I am building with...
+    prompt: --default
 ---
 
 ## User Input

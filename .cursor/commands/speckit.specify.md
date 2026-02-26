@@ -1,22 +1,19 @@
 ---
 description: Create or update the feature specification from a natural language feature description.
 handoffs: 
-  - label: Build Technical Plan
-    agent: speckit.plan
-    prompt: |
-      Create a plan for the spec.
-      
-      I am building with...
+  - label: Clarify Spec Requirements
+    agent: speckit.clarify
+    prompt: Clarify specification requirements
+    send: true
   - label: Generate System Context
     agent: flowkit.system-context
     prompt: |
       建立專案 System Context，為 Plan 階段準備上下文。
       
       執行完成後請將 spec.md frontmatter 的 `system_context` 設為 `true`。
-  - label: Clarify Spec Requirements
-    agent: speckit.clarify
-    prompt: Clarify specification requirements
-    send: true
+  - label: Build Technical Plan
+    agent: speckit.plan
+    prompt: --default
 ---
 
 ## User Input

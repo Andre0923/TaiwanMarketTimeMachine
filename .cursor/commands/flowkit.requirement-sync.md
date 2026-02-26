@@ -508,7 +508,6 @@ FOR each difference:
 
 ### 下一步建議
 - [ ] 審閱修改的需求文件
-- [ ] 執行 `/flowkit.pre-unify-check`
 - [ ] 執行 `/flowkit.unify-flow`
 ```
 
@@ -598,7 +597,6 @@ FOR each difference:
 [完整檢查清單]
 
 ### 下一步
-- [ ] 執行 `/flowkit.pre-unify-check`
 - [ ] 執行 `/flowkit.unify-flow`
 ```
 

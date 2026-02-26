@@ -361,7 +361,7 @@ $ARGUMENTS
 **當前狀態**：[READY / READY_WITH_WARNINGS / NOT_READY]
 
 ### 下一步
-- 若 READY → 執行 `/flowkit.unify-flow`
+- 若 READY → 執行 `/flowkit.trace` 建立規格-程式碼追溯索引
 - 若 READY_WITH_WARNINGS → 處理警告或確認可忽略後執行
 - 若 NOT_READY → 修正問題後重新執行本檢查
 ```

@@ -9,12 +9,13 @@ Chart Service Layer.
 3. 無資料情況處理（US A-1 AC3）
 """
 
-from typing import List, Optional
-from datetime import datetime
 from collections import defaultdict
+from datetime import datetime
+from typing import List, Optional
+
 from src.db.stock_repository import StockRepository
-from src.models.chart import ChartDataPoint, ChartResponse, ChartMetadata
 from src.logger import setup_logger
+from src.models.chart import ChartDataPoint, ChartMetadata, ChartResponse
 
 logger = setup_logger(__name__)
 
@@ -69,7 +70,7 @@ class ChartService:
             '2330'
         """
         logger.info(
-            f"Service: 查詢日K資料",
+            "Service: 查詢日K資料",
             extra={"stock_code": stock_code, "start_date": start_date, "end_date": end_date}
         )
 
@@ -115,7 +116,7 @@ class ChartService:
         )
 
         logger.info(
-            f"Service: 日K資料處理完成",
+            "Service: 日K資料處理完成",
             extra={
                 "stock_code": stock_code,
                 "data_points": metadata.data_points,

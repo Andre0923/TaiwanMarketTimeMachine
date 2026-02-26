@@ -7,9 +7,11 @@ Stock Repository Layer.
 使用參數化查詢防止 SQL Injection，支援連線錯誤重試機制。
 """
 
-from typing import List, Tuple, Optional
 from datetime import datetime
+from typing import List, Optional, Tuple
+
 import pyodbc
+
 from src.db.connection import get_connection
 from src.logger import setup_logger
 
@@ -101,7 +103,7 @@ class StockRepository:
             cursor = conn.cursor()
 
             logger.debug(
-                f"執行 SQL 查詢",
+                "執行 SQL 查詢",
                 extra={"query": query, "params": (stock_code, start_date, end_date)}
             )
 

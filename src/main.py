@@ -13,10 +13,11 @@ Taiwan Market Time Machine - FastAPI Application Entry Point.
 """
 
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from src.logger import setup_logger
+from fastapi.responses import JSONResponse
+
 from src.api.routes import chart
+from src.logger import setup_logger
 
 logger = setup_logger(__name__)
 

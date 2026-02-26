@@ -59,6 +59,21 @@ docs/76.改版歷史/
 ```
 **MUST NOT**：在指令化檔案（`.github/agents/`、`.cursor/commands/`）內嵌版本歷史區塊。
 
+### 1.7 指令修改規範 🔴 NON-NEGOTIABLE
+當修改任何 FlowKit 或 SpecKit 指令（`.github/agents/`、`.cursor/commands/`、`.github/prompts/`）時，MUST 依照 `docs/07.Flowkit指令化製造文件/指令修改指南.md` 執行完整修改流程，包含但不限於：
+- Agent + Command 同步修改
+- 功能說明文件同步更新
+- 索引文件同步更新（新增／刪除指令時）
+- 版本歷史更新
+- `version-manifest.md` 更新（兩步驟，見下方）
+
+**version-manifest.md 兩步驟更新規則 🔴**：
+- **Step A（git commit 前）**：更新版號、日期，「對應 Commit」欄位填 `pending`
+- **Step B（git commit 後，立即執行）**：`git log --oneline -1` 取得 hash → 更新 `pending` 為實際 hash → 以 `chore: 更新 version-manifest commit hash (xxxxxxx)` 獨立提交
+- **MUST NOT**：在未 commit 的情況下，將預期或假設的 hash 填入 Manifest
+
+**MUST NOT**：僅修改指令檔案而未同步更新相關文件。
+
 ---
 
 ## 2. SDD 核心提醒
