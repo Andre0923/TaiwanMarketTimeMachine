@@ -3,7 +3,7 @@ description: 將 Feature 開發過程中的調整修正，同步回寫至 PRD �
 handoffs:
   - label: 執行 Unify Flow
     agent: flowkit.unify-flow
-    prompt: 跳過 Pre-Unify Check，直接執行 Unify Flow
+    prompt: 需求同步完成，執行 Unify Flow 合併至 System Spec
 ---
 
 # FlowKit Requirement Sync
@@ -516,7 +516,6 @@ FOR each difference:
 
 ### 下一步建議
 - [ ] 審閱修改的需求文件
-- [ ] 執行 `/flowkit.pre-unify-check`
 - [ ] 執行 `/flowkit.unify-flow`
 ```
 
@@ -606,7 +605,6 @@ FOR each difference:
 [完整檢查清單]
 
 ### 下一步
-- [ ] 執行 `/flowkit.pre-unify-check`
 - [ ] 執行 `/flowkit.unify-flow`
 ```
 

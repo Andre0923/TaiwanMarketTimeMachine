@@ -1,12 +1,12 @@
 ---
 description: 在 Unify Flow 完成後，產生或更新系統上下文文件
 handoffs:
-  - label: 開始規格撰寫
-    agent: speckit.specify
-    prompt: 根據系統上下文開始撰寫 Feature Spec
   - label: 開始實作規劃
     agent: speckit.plan
-    prompt: 根據已完成的 Spec 開始規劃實作
+    prompt: --default
+  - label: 開始規格撰寫
+    agent: speckit.specify
+    prompt: --default
 ---
 
 # FlowKit System Context

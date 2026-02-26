@@ -3,10 +3,10 @@ description: 在 Plan 階段完成後，檢查 Feature Plan 與現有系統的�
 handoffs:
   - label: 修正 Plan
     agent: speckit.plan
-    prompt: 根據一致性檢查結果修正 Plan
+    prompt: --default
   - label: 建立 Tasks
     agent: speckit.tasks
-    prompt: 一致性檢查通過，建立開發任務
+    prompt: --default
 ---
 
 # FlowKit Consistency Check

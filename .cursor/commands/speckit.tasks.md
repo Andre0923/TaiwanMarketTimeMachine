@@ -3,7 +3,7 @@ description: Generate an actionable, dependency-ordered tasks.md for the feature
 handoffs: 
   - label: Analyze For Consistency
     agent: speckit.analyze
-    prompt: Run a project analysis for consistency
+    prompt: --default
     send: true
   - label: Implement Project
     agent: speckit.implement

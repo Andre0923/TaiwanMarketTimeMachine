@@ -1,5 +1,12 @@
 ---
 description: Perform a non-destructive cross-artifact consistency and quality analysis across spec.md, plan.md, and tasks.md after task generation.
+handoffs:
+  - label: 開始實作
+    agent: speckit.implement
+    prompt: 一致性分析通過，開始按照 Tasks 實作程式碼
+  - label: 修正 Tasks
+    agent: speckit.tasks
+    prompt: --default
 ---
 
 ## User Input

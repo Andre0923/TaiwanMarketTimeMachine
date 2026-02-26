@@ -3,13 +3,10 @@ description: 在 SpecKit 主流程完成後，以一次性指令完成 debug/微
 handoffs:
   - label: 重跑驗證
     agent: flowkit.code-check
-    prompt: 重新執行 code-check 驗證修復結果
-  - label: 合併前檢查
-    agent: flowkit.pre-unify-check
-    prompt: 執行合併前品質檢查
+    prompt: --default
   - label: 繼續調整
     agent: flowkit.refine-loop
-    prompt: 繼續進行下一輪調整
+    prompt: --default
 ---
 
 # flowkit.refine-loop.prompt.md

@@ -1,13 +1,13 @@
 ---
 description: Execute the implementation planning workflow using the plan template to generate design artifacts.
 handoffs:
-  - label: 確認plan與system一致性
+  - label: 確認 Plan 與 System 一致性
     agent: flowkit.consistency-check
     prompt: Plan 完成，執行一致性檢查確認與現有系統無衝突
+    send: true
   - label: Create Tasks
     agent: speckit.tasks
-    prompt: Break the plan into tasks
-    send: true
+    prompt: --default
   - label: Create Checklist
     agent: speckit.checklist
     prompt: Create a checklist for the following domain...

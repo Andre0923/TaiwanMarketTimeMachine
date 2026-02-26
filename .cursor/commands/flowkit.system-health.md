@@ -6,7 +6,7 @@ handoffs:
     prompt: 依據 system-health 報告規劃下一個 Milestone
   - label: 進入 Refine Loop 修復
     agent: flowkit.refine-loop
-    prompt: 修復 system-health 報告中發現的問題
+    prompt: --default
   - label: 更新系統上下文
     agent: flowkit.system-context
     prompt: 更新專案系統上下文

@@ -1,18 +1,15 @@
 ---
 description: 後實作程式碼驗證 — 以 AI 驅動的自動化金字塔 (L0-L4) 確認功能正常運作，產出結構化驗證報告
 handoffs:
-  - label: 進入 Unify Flow
-    agent: flowkit.unify-flow
-    prompt: 驗證通過，開始 Unify Flow
-  - label: 進入 Refine Loop
-    agent: flowkit.refine-loop
-    prompt: 驗證發現問題，進入修正迴圈
-  - label: Bug-Fix 自動修復（非功能回歸）
-    agent: flowkit.refine-loop
-    prompt: 非功能回歸 bug-fix，請以 --default 模式讀取 .artifacts/bug-fix-list-feature-*.md
   - label: 執行 Pre-Unify 檢查
     agent: flowkit.pre-unify-check
     prompt: Code Check 通過，執行 Unify 前置檢查
+  - label: 進入 Refine Loop
+    agent: flowkit.refine-loop
+    prompt: --default
+  - label: Bug-Fix 自動修復（非功能回歸）
+    agent: flowkit.refine-loop
+    prompt: --default
 ---
 
 # FlowKit Code Check

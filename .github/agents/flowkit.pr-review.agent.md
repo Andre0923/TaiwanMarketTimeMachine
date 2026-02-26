@@ -3,16 +3,16 @@ description: PR 前六維品質審查 — 以資深架構師視角審查程式�
 handoffs:
   - label: 使用 Refine Loop 修正
     agent: flowkit.refine-loop
-    prompt: 修正 pr-review 發現的品質問題
+    prompt: --default
   - label: 重新執行 PR Review
     agent: flowkit.pr-review
-    prompt: 問題修正後，重新執行 PR Review
+    prompt: --default
   - label: 執行 Code Check
     agent: flowkit.code-check
-    prompt: 重新執行 Code Check 驗證
+    prompt: --default
   - label: 回到 Plan 重新規劃
     agent: speckit.plan
-    prompt: 品質問題嚴重，需要重新規劃技術方案
+    prompt: --default
 ---
 
 # FlowKit PR Review

@@ -1,9 +1,9 @@
 ---
 description: 產生規格-程式碼可追溯性索引（Traceability Index）
 handoffs:
-  - label: 執行 Pre-Unify 檢查
-    agent: flowkit.pre-unify-check
-    prompt: 追溯索引完成，執行 Unify 前置檢查
+  - label: 執行需求回寫
+    agent: flowkit.requirement-sync
+    prompt: --default
 ---
 
 # FlowKit Trace

@@ -1,9 +1,12 @@
 ---
 description: 在執行 Unify Flow 之前，進行 Spec 品質驗證與非意圖性錯誤最終檢查
 handoffs:
+  - label: 建立追溯索引
+    agent: flowkit.trace
+    prompt: Pre-Unify 檢查通過，建立規格-程式碼追溯索引
   - label: 執行 requirement-sync
     agent: flowkit.requirement-sync
-    prompt: 執行需求同步，將變更回寫至需求文件
+    prompt: --default
   - label: 執行 Unify Flow
     agent: flowkit.unify-flow
     prompt: Pre-Unify 檢查通過，執行 Unify Flow
@@ -372,7 +375,7 @@ $ARGUMENTS
 **當前狀態**：[READY / READY_WITH_WARNINGS / NOT_READY]
 
 ### 下一步
-- 若 READY → 執行 `/flowkit.unify-flow`
+- 若 READY → 執行 `/flowkit.trace` 建立規格-程式碼追溯索引
 - 若 READY_WITH_WARNINGS → 處理警告或確認可忽略後執行
 - 若 NOT_READY → 修正問題後重新執行本檢查
 ```

@@ -707,7 +707,7 @@ IF any linting check fails:
 | US A-2 | ⏳ 尚未規劃 | 🧩 M01 執行中 |
 
 ### 下一步建議
-- [ ] 將 Milestone 交付 SpecKit 進行 Feature 開發
+- [ ] 執行 `/flowkit.Milestone-context` 抽取設計上下文並檢測衝突
 - [ ] 或繼續執行 `--milestone` 規劃下一個 Milestone
 ```
 

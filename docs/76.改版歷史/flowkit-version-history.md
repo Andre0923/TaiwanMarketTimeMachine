@@ -92,6 +92,9 @@
 
 | 版本 | 日期 | 變更說明 |
 |------|------|----------|
+| 1.7.0 | 2026-02-26 | Phase 7.5 改版：自然語言 README 生成機制取代 AUTO 標記（`PROJECT-STATUS`/`FEATURE-TABLE`），新增 `FROZEN`/`SYNC-ONLY` 保護標記，AI 自動重寫 README 不需人類確認；修補 1.4.0 功能說明缺漏（Phase 4 Step 0）+ 版本歷史排序修正 |
+| 1.6.0 | 2026-02-26 | 新增 Phase 7.5 README 專案狀態同步：採用 HTML Comment Markers（`<!-- AUTO:PROJECT-STATUS:START/END -->`、`<!-- AUTO:FEATURE-TABLE:START/END -->`）機制，僅更新標記區段內的專案狀態與功能表，無標記則安全跳過；DoD 新增 README.md AUTO 標記同步驗證項；Phase 摘要表新增 Phase 7.5 列 |
+| 1.5.0 | 2026-02-25 | 新增 Phase 4.5 Milestone / US 狀態自動更新：Feature 封存後自動更新 `docs/requirements` 層級的 US 狀態（🧩→✅/🔶）和 Milestone 完成度，與 BDD-Milestone（⏳→🧩）形成 US 狀態全生命週期閉環；DoD 新增 README.md US 狀態 + Milestone 狀態驗證項（Issue #5 實施） |
 | 1.4.0 | 2026-02-25 | Phase 4 新增 Step 0：封存前自動將 Feature Status 更新為 `Unified`（YAML frontmatter + inline 標記），確保歷史記錄反映最終狀態（Issue #4 實施） |
 | 1.3.0 | 2026-02-15 | 新增 Phase 7 TD Reconciliation：Feature 完成時自動比對 TD Ref 標註與 Open TD，提議結案並更新 TD Registry（直接解決 + 附帶解決），含 MUST ASK 人類確認 |
 | 1.2.0 | 2026-02-15 | 新增 Phase 6.5 Feature Summary 自動產生：將 Feature 開發經驗萃取為結構化摘要（品質指標、關鍵決策、學習點），儲存至 .flowkit/memory/learning/feature-summaries/（提案 #6A 實施） |
