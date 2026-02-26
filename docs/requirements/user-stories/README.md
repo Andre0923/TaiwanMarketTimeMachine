@@ -3,7 +3,7 @@
 > **專案名稱**：AI-Assisted Stock Strategy Research Platform（ASSRP）  
 > **核心定位**：視覺化事件研究與型態標記平台  
 > **建立日期**：2026-02-03  
-> **最後更新**：2026-02-03
+> **最後更新**：2026-02-26
 
 ---
 
@@ -33,10 +33,10 @@
 | US A-2 | 圖表互動操作（Zoom/Pan/Crosshair） | A | ✅ 已完成 |
 | US A-3 | 小圖點擊放大檢視 | A | ✅ 已完成 |
 | US A-4 | 圖表載入狀態與錯誤處理 | A | ✅ 已完成 |
-| US B-1 | 結構化條件查詢 | B | ⏳ 尚未規劃 |
-| US B-2 | Grid 多圖並列顯示 | B | ⏳ 尚未規劃 |
-| US B-3 | 事件日置中對齊 | B | ⏳ 尚未規劃 |
-| US B-4 | 查詢結果數量限制與分頁 | B | ⏳ 尚未規劃 |
+| US B-1 | 結構化條件查詢 | B | 🧩 M03 執行中 |
+| US B-2 | Grid 多圖並列顯示 | B | 🧩 M03 執行中 |
+| US B-3 | 事件日置中對齊 | B | 🧩 M03 執行中 |
+| US B-4 | 查詢結果數量限制與分頁 | B | 🧩 M03 執行中 |
 | US C-1 | 時間窗口參數設定 | C | ⏳ 尚未規劃 |
 | US C-2 | 全 Grid 窗口一致化渲染 | C | ⏳ 尚未規劃 |
 | US C-3 | 事件日標記線顯示 | C | ⏳ 尚未規劃 |
@@ -56,14 +56,14 @@
 
 ## 📊 狀態快照（Status Snapshot）
 
-> **更新時間**：2026-02-25
+> **更新時間**：2026-02-26
 
 ### 狀態統計
 
 | 狀態 | 圖示 | 數量 | 百分比 |
 |------|------|------|--------|
-| 尚未規劃 | ⏳ | 17 | 77% |
-| Milestone 執行中 | 🧩 | 0 | 0% |
+| 尚未規劃 | ⏳ | 13 | 59% |
+| Milestone 執行中 | 🧩 | 4 | 18% |
 | 部分完成 | 🔶 | 0 | 0% |
 | 已完成 | ✅ | 5 | 23% |
 
@@ -84,14 +84,15 @@
 
 ---
 
-#### 🧩 Milestone 執行中（0 個）
+#### 🧩 Milestone 執行中（4 個）
 
-（無）
+**Group B — Strategy Grid 模式**（Milestone M03）
+- US B-1（結構化條件查詢）
+- US B-2（Grid 多圖並列顯示）
+- US B-3（事件日置中對齊）
+- US B-4（查詢結果數量限制與分頁）
 
-#### ⏳ 尚未規劃（17 個）
-
-**Group B — Strategy Grid 模式**
-- US B-1, US B-2, US B-3, US B-4
+#### ⏳ 尚未規劃（13 個）
 
 **Group C — Time Window Engine**
 - US C-1, US C-2, US C-3, US C-4
@@ -121,10 +122,10 @@
 
 ### 進行中的 Milestone
 
-**[M02 — 前端圖表互動功能](../Milestone/M02-frontend-chart-interactions.md)** ✅ 已完成
-- 包含：US A-2, A-3, A-4
-- 完成日期：2026-02-09
-- 交付：Vue 3 + Electron 前端應用 + TradingView Lightweight Charts 5.1 整合
+**[M03 — Strategy Grid 核心](../Milestone/M03-strategy-grid.md)** 🧩 執行中
+- 包含：US B-1, B-2, B-3, B-4
+- 建立日期：2026-02-26
+- Tech Debt 建議：TD-001（MSSQL 整合測試）、TD-002（Playwright E2E）
 
 ### 規劃建議
 
@@ -132,9 +133,10 @@
 
 1. ✅ **M01 — 基礎繪圖與 API 格式**（已完成）
 2. ✅ **M02 — 前端圖表互動功能**（已完成）
-3. **M03 — Strategy Grid 核心**（Group B + C）
-4. **M04 — 事件研究統計**（Group D + E + US G-1）
-5. **M05 — AI 協作增強**（Group F）
+3. 🧩 **M03 — Strategy Grid 核心**（Group B）← 當前
+4. **M04 — Strategy Grid + Time Window**（Group C）
+5. **M05 — 事件研究統計**（Group D + E + US G-1）
+6. **M06 — AI 協作增強**（Group F）
 
 ---
 
