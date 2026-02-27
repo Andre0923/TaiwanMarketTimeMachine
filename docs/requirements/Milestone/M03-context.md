@@ -238,8 +238,8 @@ M03 需要新增查詢 endpoint（`/api/strategy/query` 或類似路徑），現
 |------|----|
 | **衝突類型** | 約束衝突（Constraint Conflict） |
 | **嚴重性** | MEDIUM |
-| **狀態** | 確定衝突（System 內部已存在） |
-| **影響 M03** | YES |
+| **狀態** | ✅ **已決策（方案 A，2026-02-27）** |
+| **影響 M03** | YES — M03 查詢 API 統一採 4-10 字元規則 |
 
 **現況差異**：
 
@@ -251,12 +251,13 @@ M03 需要新增查詢 endpoint（`/api/strategy/query` 或類似路徑），現
 
 **影響 M03**：US B-1 設計新查詢 API 時，需決定 `stock_code` 的驗證規則（ETF 代碼如 `006208` 為 6 碼；外資代碼可能含英文字母），若沿用 4 位數字限制，可能排除有效股票代碼。
 
-**建議解決方案**：
+**決策結果（2026-02-27）**：
 
-- **方案 A（建議）**：採用 `contracts/chart-api.md` 的較寬鬆規則（4-10 字元，含大寫英文），M03 實作時統一使用，後續透過 Unify Flow 更新 `data-model.md` 與 `spec.md`
-- **方案 B**：維持 4 位數字限制，明確記錄此設計決策，ETF 等特殊代碼另行處理
+- ✅ **方案 A（已採用）**：採用 `contracts/chart-api.md` 的較寬鬆規則（4-10 字元，含大寫英文），M03 實作時統一使用，後續透過 Unify Flow 更新 `data-model.md` 與 `spec.md`
+- ~~方案 B：維持 4 位數字限制~~（未採用）
 
-> 🔴 **需要人類決策**：在 Plan 階段前請確認 `stock_code` 驗證規則。
+> ✅ **決策已確認**：`stock_code` 驗證規則 = 4-10 字元，允許數字與大寫英文（對齊 `contracts/chart-api.md`）。  
+> Unify Flow 完成後，`data-model.md`（ChartMetadata）與 `spec.md`（ErrorCode 說明）需同步更新。
 
 ---
 
@@ -291,10 +292,10 @@ M03 需要新增查詢 endpoint（`/api/strategy/query` 或類似路徑），現
 
 ### 必須在 Plan 前決策（Pre-Plan）
 
-| 優先序 | 事項 | 建議 |
+| 優先序 | 事項 | 狀態 |
 |--------|------|------|
-| 🔴 1 | `stock_code` 驗證規則統一 | 決定採 4-10 字元方案（方案A）或 4 位數字（方案B） |
-| 🟡 2 | M03 查詢 API Response 格式 | 決定是否直接用 PRD §4 格式或設計 M03 子集格式 |
+| ✅ 1 | `stock_code` 驗證規則統一 | **已決策（方案 A）**：4-10 字元，含大寫英文 |
+| 🟡 2 | M03 查詢 API Response 格式 | 建議採方案 A（M03 子集格式，預留選填欄位） |
 
 ### Plan 階段建議新增至 System 的設計
 
@@ -323,9 +324,9 @@ M03 需要新增查詢 endpoint（`/api/strategy/query` 或類似路徑），現
 
 ### 衝突處理狀態
 
-- [ ] **CONFLICT-001**（MEDIUM）：stock_code 驗證規則 → 需人類決策後納入 Plan
+- [x] **CONFLICT-001**（MEDIUM）：stock_code 驗證規則 → ✅ 已決策（方案 A，2026-02-27）
 - [ ] **CONFLICT-002**（LOW）：PRD §4 格式範圍 → 建議 Plan 階段選定方案
 
 ---
 
-> **下一步**：執行 `speckit specify --milestone M03` 開始 M03 需求細化（建議先解決上方 CONFLICT-001）
+> **下一步**：執行 `speckit specify --milestone M03` 開始 M03 需求細化。
