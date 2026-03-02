@@ -92,10 +92,10 @@
 >
 > **⚠️ Gate 條件**：Phase 7–10 的所有前端任務不得在本階段完成前開始
 
-- [ ] T021 更新 `specs/system/ui/ui-structure.md`（新增 `[UI-SCR-002]` Strategy Grid View Screen 定義：固定頂部佈局，QueryPanel 在上 Grid 在下；新增 `[UI-CMP-002]` QueryPanel Component；新增 `[UI-CMP-003]` MiniChart Component）
-- [ ] T022 更新 `specs/system/ui/ux-guidelines.md`（新增 `[UI-STATE-004]` Partial Data Pattern：`data_complete=false` 時在 MiniChart 顯示「資料不完整」文字標籤）
-- [ ] T023 更新 `specs/features/003-strategy-grid/spec.md`（將所有 `[UI-TBD: UI-SCR-002]` → `[UI-SCR-002]`；`[UI-TBD: UI-CMP-002]` → `[UI-CMP-002]`；`[UI-TBD: UI-CMP-003]` → `[UI-CMP-003]`；`[UI-TBD: Loading/Empty/Error/Partial state]` → `[UI-STATE-001/002/003/004]`）
-- [ ] T024 確認 `spec.md` 中無殘留 `[UI-TBD]` 標記（`grep -n "UI-TBD" spec.md` 輸出為空 = UI Maturity L1 達成）
+- [ ] T021 [GATE] 更新 `specs/system/ui/ui-structure.md`（新增 `[UI-SCR-002]` Strategy Grid View Screen 定義：固定頂部佈局，QueryPanel 在上 Grid 在下；新增 `[UI-CMP-002]` QueryPanel Component；新增 `[UI-CMP-003]` MiniChart Component）
+- [ ] T022 [GATE] 更新 `specs/system/ui/ux-guidelines.md`（新增 `[UI-STATE-004]` Partial Data Pattern：`data_complete=false` 時在 MiniChart 顯示「資料不完整」文字標籤）
+- [ ] T023 [GATE] 更新 `specs/features/003-strategy-grid/spec.md`（將所有 `[UI-TBD: UI-SCR-002]` → `[UI-SCR-002]`；`[UI-TBD: UI-CMP-002]` → `[UI-CMP-002]`；`[UI-TBD: UI-CMP-003]` → `[UI-CMP-003]`；`[UI-TBD: Loading/Empty/Error/Partial state]` → `[UI-STATE-001/002/003/004]`；`[UI-TBD: Adjustable Grid Control]` → `[UI-CMP-004]`）
+- [ ] T024 [GATE] 確認 `spec.md` 中無殘留 `[UI-TBD]` 標記（`grep -n "UI-TBD" spec.md` 輸出為空 = UI Maturity L1 達成）
 
 ---
 
@@ -131,7 +131,9 @@
 > **Independent Test**: `pnpm vitest run ChartGrid` → 全通過；傳入 20 個 `SampleResult` mock → 渲染 20 個 MiniChart 元件；App.vue 模式切換顯示 QueryPanel + ChartGrid 組合
 
 - [ ] T032 [TEST-FIRST] [P] [US2] 撰寫 `frontend/src/components/__tests__/ChartGrid.strategy.test.ts`（Vitest；傳入 `SampleResult[]` → 渲染對應數量的 MiniChart；Grid 4 欄佈局 CSS class 存在；空陣列 → 顯示 Empty Pattern [UI-STATE-002]；初始狀態 FAIL）
+- [ ] T032-B [TEST-FIRST] [P] [US2] 在 `ChartGrid.strategy.test.ts` 新增欄數調整測試（選 2 欄 → CSS `grid-cols-2`；選 6 欄 → `grid-cols-6`；預設 4 欄 → `grid-cols-4`；調整後 MiniChart 數量不變；初始狀態 FAIL [US B-2 AC2]）
 - [ ] T033 [US2] 修改 `frontend/src/components/ChartGrid.vue`（新增 `samples: SampleResult[]` prop（選填）；當 `samples` 存在時以 Grid 4 欄自動換列佈局渲染 MiniChart 陣列；維持現有 M01/M02 StockCode 選股模式不受影響）
+- [ ] T033-A [US2] 在 `frontend/src/components/ChartGrid.vue` 新增欄數選擇器（2 / 4 / 6 欄 radio group 或 select，預設 4 欄；選擇後 CSS Grid 從 `grid-cols-4` 切換為對應的 `grid-cols-N`；小圖等比縮放 [US B-2 AC2]）
 - [ ] T034 [US2] 修改 `frontend/src/App.vue`（新增 Strategy Grid 模式頁籤/切換按鈕（[UI-SCR-002]）；固定頂部佈局：QueryPanel 在上，ChartGrid 在下；`useStrategyQuery` composable 串接 QueryPanel submit event → ChartGrid samples 更新）
 - [ ] T035 [US2] 確認 ChartGrid Grid 模式 Vitest 測試全通過（`pnpm vitest run ChartGrid.strategy` → PASS）
 
@@ -153,12 +155,13 @@
 
 > **Goal**: 效能驗收、手動驗收、文件同步收尾
 
-- [ ] T039 手動測試 Grid 渲染效能（造出 50 個 `SampleResult` mock → 計時 Grid 從載入到 50 個 MiniChart 全部可見；目標 < 3 秒 [US B-2 AC3]；若超時，評估 Intersection Observer 懶載入可行性）
+- [ ] T039 手動測試 NFR 效能驗收（①造出 50 個 `SampleResult` mock → 計時 Grid 全部可見，目標 < 3 秒 [US B-2 AC3]；②執行分頁切換 page 1→2→3，計時每次切換到 Grid 重新渲染完成，目標 < 3 秒 [§1.3 NFR]；③從提交查詢到顯示 `total_count`，計時目標 < 5 秒 [§1.3 NFR]；①若超時，評估 Intersection Observer 懶載入可行性）
 - [ ] T040 手動驗收事件日水平置中視覺效果（抽查 5 個以上不同 `eventBarIndex` 的 MiniChart，確認事件日 K 線視覺上位於圖表水平中心 [US B-3 AC1]）
 - [ ] T041 更新 `specs/features/003-strategy-grid/spec-delta-log.md`（記錄實作過程中發現的任何 Spec 差異，尤其是 DB Schema 欄名 [T002/T003 結果]、`_align_to_event_date` 邊界行為等）
 - [ ] T042 更新 `specs/system/flows.md`（補入 Strategy Grid 查詢流程：QueryPanel submit → POST /api/strategy/query → StrategyService → _align_to_event_date → GridQueryResponse → ChartGrid render MiniChart）
 - [ ] T043 更新 `docs/requirements/user-stories/README.md`（US B-1~B-4 狀態同步；統計數字更新）
 - [ ] T044 確認所有測試通過且 coverage 未下降（`uv run pytest --cov=src --cov-report=html:.artifacts/coverage` + `pnpm vitest run` 全部 PASS；與進入 Phase 1 前的 coverage 基準比較不下降）
+- [ ] T045 手動驗收記憶體穩定性（連續查詢 3 次，每次 100 個樣本；翻頁至第 3 頁；確認 Electron DevTools Memory 面板 JS heap size 無持續上升趨勢 [§1.3 NFR]）
 
 ---
 
@@ -243,16 +246,16 @@ T032 (寫 ChartGrid 測試) ───┘
 
 | 指標 | 數值 |
 |------|------|
-| **總任務數** | 44 |
-| **可平行任務 [P]** | 7（T004, T005, T006, T007, T025, T029, T032）|
-| **TEST-FIRST 任務** | 6（T005, T006, T007, T025, T029, T032）|
+| **總任務數** | 47 |
+| **可平行任務 [P]** | 8（T004, T005, T006, T007, T025, T029, T032, T032-B）|
+| **TEST-FIRST 任務** | 7（T005, T006, T007, T025, T029, T032, T032-B）|
 | **US B-1 任務數** | 12（T008–T014, T025–T028）|
-| **US B-2 任務數** | 4（T032–T035）|
+| **US B-2 任務數** | 6（T032, T032-B, T033, T033-A, T034, T035）|
 | **US B-3 任務數** | 6（T015–T017, T029–T031）|
 | **US B-4 任務數** | 6（T018–T020, T036–T038）|
 | **Setup/Foundational 任務數** | 7（T001–T007）|
 | **UI Gate 任務數** | 4（T021–T024）|
-| **Polish 任務數** | 6（T039–T044）|
+| **Polish 任務數** | 7（T039–T045）|
 | **建議 MVP 範圍** | Phase 1–6（後端 API 完整可用 + UI Gate）|
 
 ---

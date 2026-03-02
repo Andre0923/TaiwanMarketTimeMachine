@@ -110,10 +110,10 @@ updated: 2026-03-02
 - **When** 使用者切換到 Grid 模式
 - **Then** 應以預設 4 欄 × 5 列的 Grid 佈局顯示所有小圖，每張小圖對應一個樣本
 
-**AC2 — Grid 尺寸可調整**
+**AC2 — Grid 尺寸可調整 [MODIFIED]**
 - **Given** Grid 模式已啟動
-- **When** 使用者調整 Grid 的欄數或列數設定
-- **Then** Grid 應依新設定重新排列，每個小圖尺寸相應縮放
+- **When** 使用者透過欄數選擇器調整欄數（可選值：2、4、6 欄；預設 4 欄；[UI-TBD: Adjustable Grid Control]，Phase 6 UI Gate 定案具體元件）
+- **Then** Grid 應依新欄數設定重新排列，每個小圖尺寸相應等比縮放
 
 **AC3 — 高效能渲染**
 - **Given** Grid 包含 50 個以上小圖
@@ -229,6 +229,8 @@ updated: 2026-03-02
 | event_date | Date | 事件日期 |
 | chart_data | OHLCV[] | 事件日前後 K 線資料（交易日對齊） |
 | data_complete | Boolean | 事件前後資料是否完整 |
+
+> **完整欄位定義見** `data-model.md § SampleResult`（含 plan 階段精鍊新增的 `event_bar_index: int` 欄位，供前端 TradingView `setVisibleLogicalRange()` 置中渲染使用）。
 
 ---
 
