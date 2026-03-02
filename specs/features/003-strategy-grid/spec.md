@@ -1,6 +1,6 @@
 ---
 milestone: M03
-system_context: false
+system_context: true
 status: Draft  # 允許值: Draft | In Progress | Implemented | Unified
 created: 2026-03-02
 updated: 2026-03-02
