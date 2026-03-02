@@ -44,6 +44,18 @@ updated: 2026-03-02
 
 ---
 
+## Clarifications
+
+### Session 2026-03-02
+
+- Q: `stock_events` 資料表由誰填入？ → A: 資料庫預載，M03 只負責查詢與篩選，不需建立或匯入事件記錄
+- Q: 事件日前後交易日天數（pre/post days）如何決定？ → A: 系統預設常數（pre=20, post=10），M03 不提供 UI 調整介面，M04 才開放
+- Q: 使用者輸入無效查詢條件時如何處理？ → A: 前端即時驗證，禁止提交並顯示欄位旁錯誤提示
+- Q: QueryPanel 配置方式？ → A: 固定頂部，查詢條件區在上，Grid 多圖區在下
+- Q: `event_type` 是否可作為 US B-1 的查詢條件？ → A: 不可以，M03 不以 event_type 篩選，明確列為 Out of Scope
+
+---
+
 ## 2. User Stories
 
 ### US B-1: 結構化條件查詢
@@ -75,6 +87,11 @@ updated: 2026-03-02
 - **Given** 使用者設定的條件過於嚴格
 - **When** 查詢結果為空
 - **Then** 應向使用者顯示「無符合條件的樣本」提示，並提供放寬條件的建議
+
+**AC5 — 條件格式驗證** [NEW]
+- **Given** 使用者在 QueryPanel 填寫查詢條件
+- **When** 填入無效條件（如 date_from 晚於 date_to、股票代碼格式不符 4-10 字元規則）
+- **Then** 前端應即時在欄位旁顯示錯誤提示，並禁止提交查詢直到條件格式正確
 
 ---
 
@@ -124,7 +141,7 @@ updated: 2026-03-02
 - **Then** 事件日應位於圖表的水平中心位置（交易日計算，非日曆日）
 
 **AC2 — 事件前後資料對稱**
-- **Given** 設定事件前 20 個交易日、事件後 10 個交易日
+- **Given** 系統預設事件前 20 個交易日（pre=20）、事件後 10 個交易日（post=10）
 - **When** 系統渲染每張小圖
 - **Then** 事件日左側應顯示最多 20 根 K 線，右側應顯示最多 10 根 K 線
 
@@ -168,6 +185,8 @@ updated: 2026-03-02
 4. 事件前後天數計算基準為**台灣股市交易日（Trading Days）**，非日曆日
 5. 查詢效能目標（3 秒內渲染 50 圖）假設使用者在正常網路條件下操作
 6. M03 查詢 API 回傳格式僅包含 M03 範圍欄位（樣本清單 + 分頁 metadata），`event_window`/`horizons`/`metrics` 為選填欄位，留給 M04/M05 填入（CONFLICT-002 建議方案 A）
+7. `stock_events` 為資料庫預載的唯讀資料，M03 不需提供事件建立、編輯或匯入功能
+8. 事件日前後天數採系統預設常數（pre=20 交易日、post=10 交易日），M03 不提供使用者調整介面；此設定將在 M04 Time Window Engine 開放 UI 控制
 
 ---
 
@@ -179,7 +198,7 @@ updated: 2026-03-02
 |------|------|------|
 | stock_code | String (4-10 chars) | 股票代碼，含大寫英文與數字 |
 | event_date | Date | 事件日期（交易日） |
-| event_type | String | 事件類型標籤（可選，供分類用途） |
+| event_type | String | 事件類型標籤（可選，僅供顯示用途；M03 不以此欄位篩選）|
 
 ### 4.2 StrategyQueryParams（查詢條件 DTO）
 
@@ -230,13 +249,13 @@ updated: 2026-03-02
 | **涉及畫面** | [UI-TBD: Strategy Grid View — 新畫面，含查詢條件區域與 Grid 多圖並列區域] |
 | **涉及模式** | [UI-TBD: Grid Layout Pattern — 可調整欄列數的多圖佈局互動模式] |
 | **涉及狀態** | [UI-TBD: Loading（Grid 渲染中）、Empty（查詢無結果）、Error（查詢失敗）、Partial（資料不完整小圖）] |
-| **UI Unknowns** | 1. Grid 小圖的最小/最大尺寸限制是否有設計規範；2. 查詢條件面板是側欄浮動或固定頂部 |
+| **UI Unknowns** | 1. Grid 小圖的最小/最大尺寸限制是否有設計規範（L0 暫不需定案） |
 
 ### UI References
 
 | UI ID | 類型 | 說明 | 所屬 User Story |
 |-------|------|------|-----------------|
-| [UI-TBD: UI-SCR-002] | Screen | Strategy Grid View — 批次比對主畫面 | US B-2, US B-3, US B-4 |
+| [UI-TBD: UI-SCR-002] | Screen | Strategy Grid View — 固定頂部佈局：QueryPanel 在上、Grid 多圖區在下 | US B-2, US B-3, US B-4 |
 | [UI-TBD: UI-CMP-002] | Component | QueryPanel — 條件查詢輸入元件 | US B-1 |
 | [UI-TBD: UI-CMP-003] | Component | MiniChart — Grid 小圖元件（事件置中版） | US B-2, US B-3 |
 
@@ -252,3 +271,4 @@ updated: 2026-03-02
 4. **AI 條件生成**（未來 US）：以自然語言描述條件由 AI 轉換為結構化查詢
 5. **查詢結果快取**（US G-1）：查詢結果持久化快取機制（本 Feature 需預留 hook 但不實作）
 6. **事件日標記線視覺化**（M04）：在 K 線圖上畫出事件日的垂直標記線
+7. **以 `event_type` 篩選事件**：`StrategyQueryParams` 不包含 event_type 過濾欄位，事件類型僅作為 StockEvent 的展示屬性，留待後續 Milestone 評估
