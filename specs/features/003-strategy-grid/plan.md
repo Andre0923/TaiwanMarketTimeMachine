@@ -145,6 +145,7 @@ specs/features/003-strategy-grid/plan.md        ← 本文件
 | §3.2 | Observability - Section 5 已說明 logging 策略 | Section 5 已完整填寫 | ✅ |
 | §5.1 | 文件一致性 - 規劃包含文件更新任務 | Section 1.3 列出契約文件新增；Section 2.6 UI 文件更新任務；Section 8 Checklist 包含文件同步 | ✅ |
 | §6.1 | 不確定性處理 - 無未解決的 TODO/??? 或已記錄於 research.md | research.md 記錄 10 筆決策，無殘留 NEEDS CLARIFICATION；R-03 DB schema 為實作 TODO 非規格不確定 | ✅ |
+| §6.2 | 錯誤碼 - 只能使用預定義清單 | M03 功能性新增 3 個錯誤碼（`INVALID_QUERY_LOGIC`、`INVALID_PRICE_RANGE`、`INVALID_PAGE`），屬意圖內擴充；**Unify Flow 後 MUST 同步寫入 `specs/system/spec.md §5` 錯誤碼清單** | ✅ |
 
 ### 3.2 條件性檢查 (🟡)
 
@@ -226,6 +227,7 @@ class GridQueryResponse(BaseModel):
 | 欄位名稱 | 實作時確認（`SELECT TOP 1 * FROM stock_events/stock_daily`）| PRD 未定義精確欄名（R-03）|
 | 查詢方式 | 全面參數化查詢（`pyodbc` `?` 佔位符）| 防 SQL Injection（R-07）|
 | 批次策略 | 一次取所有涉及 event dates 範圍的 trading days | 避免 N+1 查詢（R-04）|
+| DB 連線 | 複用 `src/db/connection.py` 的 `get_db_connection()`（與 `StockRepository` 相同策略）| 一致性，避免多個連線池 |
 
 **主要方法**：
 

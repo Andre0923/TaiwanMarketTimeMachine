@@ -69,7 +69,7 @@
 │  Entry: src/main.py                                                 │
 │  Routes: src/api/routes/chart.py                                    │
 │  - GET /api/chart/daily                                             │
-│  - (M03) GET /api/strategy/query (待實作)                           │
+│  - (M03) POST /api/strategy/query (待實作)                          │
 └─────────────────────────────────────────────────────────────────────┘
                                     │
                     ┌───────────────┼───────────────┐
@@ -419,7 +419,7 @@ idle → loading → success
 - **spec-delta-log.md** 記錄 5 筆規格差異（D1-D5），含正式決策結果
 - `event_type` **不可作為查詢條件**（Out of Scope）
 - QueryPanel 配置：固定頂部，查詢條件區在上，Grid 多圖區在下
-- M03 API 路徑尚未最終定案，建議先討論再實作
+- **M03 API 端點已定案**：`POST /api/strategy/query`（HTTP body 傳複合條件，分頁用 query params）
 
 ---
 
