@@ -167,12 +167,11 @@ try {
 Set-Location -LiteralPath $repoRoot
 
 # constitution.md §1.0: Feature 目錄 MUST 位於 specs/features/ 下
-# PS 5.1 compatible: Join-Path only accepts 2 positional args
-$specsDir = Join-Path (Join-Path $repoRoot 'specs') 'features'
+$specsDir = Join-Path $repoRoot 'specs' 'features'
 New-Item -ItemType Directory -Path $specsDir -Force | Out-Null
 
 # History 目錄用於計算最高編號
-$historyDir = Join-Path (Join-Path $repoRoot 'specs') 'history'
+$historyDir = Join-Path $repoRoot 'specs' 'history'
 
 # Function to generate branch name with stop word filtering and length filtering
 function Get-BranchName {
@@ -275,15 +274,7 @@ if ($branchName.Length -gt $maxBranchLength) {
 }
 
 if ($hasGit) {
-    # PS 5.1 compatibility: wrap git call in try-catch to suppress NativeCommandError
-    # when $ErrorActionPreference = 'Stop' and git writes informational messages to stderr.
-    # After catch, check $LASTEXITCODE: 0 = success (stderr was just informational),
-    # non-zero = actual failure.
-    try {
-        $null = git checkout -b $branchName 2>&1
-    } catch {
-        # Swallow NativeCommandException; $LASTEXITCODE will indicate real success/failure
-    }
+    git checkout -b $branchName 2>$null
     if ($LASTEXITCODE -ne 0) {
         Write-Warning "Failed to create git branch: $branchName (may already exist or other git error)"
     }

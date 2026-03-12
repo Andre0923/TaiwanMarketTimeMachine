@@ -57,6 +57,13 @@ $targetPath = "E:\projects\my-old-project"
 # 3. 確認遷移腳本存在
 Test-Path "$templatePath\docs\setup-guides\migrate-to-full-kit.ps1"  # 應回傳 True
 
+# 3.5 先行同步遷移工具（腳本 Step 0 會自動完成）
+# 腳本執行的第一步會從範本同步以下檔案到目標專案，
+# 確保目標專案日後升級時可使用最新版本的遷移文件與腳本：
+# - docs/setup-guides/migration-guide.md
+# - docs/setup-guides/migration-quick-ref.md
+# - docs/setup-guides/migrate-to-full-kit.ps1
+
 # 4. 執行自動遷移（Dry Run）
 & "$templatePath\docs\setup-guides\migrate-to-full-kit.ps1" `
     -TemplatePath $templatePath `
@@ -119,6 +126,27 @@ git commit -m "chore: 升級至完整 SpecKit + FlowKit 套件"
 
 ### 執行步驟
 
+#### Phase 0: 先同步遷移工具（確保使用最新版本）
+
+> **執行原因**：必須在所有其他步驟之前先完成。確保目標專案有最新版本的遷移文件與腳本，
+> 日後升級時可直接從目標專案取得最新工具。
+
+```powershell
+cd speckit-template  # 切換到範本目錄
+
+# 先同步遷移工具到目標專案
+$guidesDest = "E:\path\to\old-project\docs\setup-guides"
+New-Item -ItemType Directory -Path $guidesDest -Force | Out-Null
+@(
+    "docs/setup-guides/migration-guide.md",
+    "docs/setup-guides/migration-quick-ref.md",
+    "docs/setup-guides/migrate-to-full-kit.ps1"
+) | ForEach-Object {
+    Copy-Item -Path $_ -Destination $guidesDest -Force
+    Write-Host "✅ 已同步遷移工具: $_"
+}
+```
+
 #### Phase 1: 核心工具遷移
 
 ```powershell
@@ -133,6 +161,28 @@ Copy-Item -Path ".specify/templates" -Destination "E:\path\to\old-project\.speci
 # 3. 複製 FlowKit 範本
 New-Item -ItemType Directory -Path "E:\path\to\old-project\.flowkit" -Force
 Copy-Item -Path ".flowkit/templates" -Destination "E:\path\to\old-project\.flowkit\" -Recurse -Force
+
+# 3.5 version-manifest.md（條件式：不存在時建立，已存在時比對）
+$vmDest = "E:\path\to\old-project\.flowkit\version-manifest.md"
+if (-not (Test-Path $vmDest)) {
+    Copy-Item -Path ".flowkit\version-manifest.md" -Destination "E:\path\to\old-project\.flowkit\" -Force
+    Write-Host "✅ 已建立 .flowkit/version-manifest.md（指令版號追蹤清單）"
+} else {
+    Write-Host "ℹ️ .flowkit/version-manifest.md 已存在，建議手動比對版號同步狀態"
+    code --diff ".flowkit\version-manifest.md" $vmDest
+}
+
+# 3.6 .flowkit/memory/（條件式：完全無檔案時才從範本複製）
+$memDest = "E:\path\to\old-project\.flowkit\memory"
+$existingMem = if (Test-Path $memDest) { @(Get-ChildItem $memDest -File) } else { @() }
+if ($existingMem.Count -eq 0) {
+    New-Item -ItemType Directory -Path $memDest -Force | Out-Null
+    Copy-Item -Path ".flowkit\memory\*" -Destination $memDest -Force
+    Write-Host "✅ 已複製 .flowkit/memory/ 初始記憶檔案"
+    Write-Host "💡 建議執行 /flowkit.system-context 重新產生符合本專案的內容"
+} else {
+    Write-Host "✅ .flowkit/memory/ 已有 $($existingMem.Count) 個檔案，保留現有記憶"
+}
 ```
 
 #### Phase 2: 指令化檔案遷移
@@ -175,11 +225,12 @@ Copy-Item -Path "docs/01.開發人員doc\*" -Destination "E:\path\to\old-project
 # Copy-Item -Path "docs/requirements/user-stories/README-template.md" -Destination "E:\path\to\old-project\docs\requirements\user-stories\" -Force
 # Copy-Item -Path "docs/requirements/user-stories/US-X-GroupName-template.md" -Destination "E:\path\to\old-project\docs\requirements\user-stories\" -Force
 
-# 10. Migration 相關文件（未來升級參考）
-New-Item -ItemType Directory -Path "E:\path\to\old-project\docs\setup-guides" -Force
-Copy-Item -Path "docs/setup-guides/migration-guide.md" -Destination "E:\path\to\old-project\docs\setup-guides\" -Force
-Copy-Item -Path "docs/setup-guides/migration-quick-ref.md" -Destination "E:\path\to\old-project\docs\setup-guides\" -Force
-Copy-Item -Path "docs/setup-guides/migrate-to-full-kit.ps1" -Destination "E:\path\to\old-project\docs\setup-guides\" -Force
+# 10. Migration 相關文件已於 Phase 0 完成同步，此處跳過
+# （若對於 Phase 0 有痕跨，可手動步驟）
+# New-Item -ItemType Directory -Path "E:\path\to\old-project\docs\setup-guides" -Force
+# @("migration-guide.md", "migration-quick-ref.md", "migrate-to-full-kit.ps1") | ForEach-Object {
+#     Copy-Item -Path "docs/setup-guides/$_" -Destination "E:\path\to\old-project\docs\setup-guides\" -Force
+# }
 
 # 11. Technical Debt Registry（⚗️ 智慧判斷）
 $tdDest = "E:\path\to\old-project\docs\technical-debt.md"
@@ -252,6 +303,10 @@ git clone https://github.com/DrDeer119/99.spec-kit-cross-platform-template.git E
 # 2. 設定路徑變數
 $templatePath = "E:\templates\spec-kit-template"
 $targetPath = "E:\projects\my-old-project"
+
+# 2.5 要點：腳本第一步（Step 0）會自動同步遷移工具
+# 執行後目標專案的 docs/setup-guides/ 將更新為最新版本，
+# 包含：migration-guide.md、migration-quick-ref.md、migrate-to-full-kit.ps1
 
 # 3. Dry Run（檢查會做什麼）
 & "$templatePath\docs\setup-guides\migrate-to-full-kit.ps1" `
@@ -437,6 +492,8 @@ pyproject.toml          ← 專案設定（絕不覆蓋）
 - [ ] `.specify/scripts/` 已更新
 - [ ] `.specify/templates/` 已更新
 - [ ] `.flowkit/templates/` 已建立
+- [ ] `.flowkit/version-manifest.md` 已建立（或已確認比對版號）
+- [ ] `.flowkit/memory/` 已確認（無檔案時已從範本複製初始記憶）
 - [ ] `.cursor/commands/` 已更新（若使用 Cursor）
 - [ ] `.github/agents/` 已更新（若使用 GitHub Copilot）
 
@@ -604,5 +661,5 @@ Copy-Item -Path "$backup\.github\copilot-instructions.md" -Destination ".github\
 
 ---
 
-**版本**：v1.1.0  
-**最後更新**：2026-02-14
+**版本**：v1.2.0  
+**最後更新**：2026-02-26

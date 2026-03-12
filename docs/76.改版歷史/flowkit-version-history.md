@@ -39,6 +39,7 @@
 
 | 版本 | 日期 | 變更說明 |
 |------|------|----------|
+| 1.2.0 | 2026-02-27 | D1 擴充為「ID 引用錯誤或碰撞」，新增建議修正值計算規則（讀取 System Spec 最大編號 + 1 遞補，產出對照表）；C 類新增 C4 「Unify Flow 項目誤置」偵測子通道（偵測實作 Phase 中用 checkbox 列出應透過 Unify Flow 執行的任務，提供改寫建議）；報告確定問題表格新增「建議修正值」欄位（Issue #6） |
 | 1.1.0 | 2026-02-14 | Phase 0 新增 Bugfix/Tech Debt 類型判斷；Phase 3 A 類新增 Change Set 排除規則（適用所有 Feature 類型）；Phase 3 C 類新增條件式模式過濾（UI 任務在 L0 場景降級為 INFO） |
 | 1.0.1 | 2026-02-01 | 新增 `--default` 模式支援 |
 | 1.0.0 | 2026-01-23 | 初始版本，從 pre-unify-check 重新設計，聚焦非意圖性錯誤 |
@@ -49,6 +50,7 @@
 
 | 版本 | 日期 | 變更說明 |
 |------|------|----------|
+| 1.3.0 | 2026-04-02 | N/A 嚴格適用原則：N/A 僅限結構性不適用，資訊不足 MUST 標記 WARNING；Phase 5 報告 N/A 區段重新設計為「僅限結構性不適用」含警告說明；Phase 0 新增原則宣告；T1-T3 全新功能嚴格 N/A 約束（Issue #25） |
 | 1.2.0 | 2026-02-15 | 新增 §3.5 Spec Delta Log 交叉比對：利用 implement_baseline_commit 執行 git diff，交叉比對 spec-delta-log.md，偵測未追蹤的 spec 變更（提案 #3 實施） |
 | 1.1.0 | 2026-02-01 | 新增 `--default` 模式支援 |
 | 1.0.0 | 2026-01-23 | 重新設計，聚焦 Spec 品質和最終攔截，移除與 consistency-check 重複的部分 |
@@ -67,7 +69,13 @@
 ## flowkit.refine-loop
 
 | 版本 | 日期 | 變更說明 |
-|------|------|----------|
+|------|------|----------|| 2.3.0 | 2026-03-05 | Activation Gate 工具呼叫防護（Issue #20）：新增 ⛔ 工具呼叫前強制閘門（即將呼叫 replace_string_in_file/create_file/multi_replace_string_in_file/edit_notebook_file 且目標含 src/ 或 tests/ 時，MUST 先確認已輸出「🔄 Refine Loop 已啟動」，否則立即 STOP 回 Step 1）；Step 2.5 加入第三個自我検核問句（未啟動卻即將呼叫 file-mutation 工具 → 立即 STOP 回 Step 1）；Agent + Command 同步 || 2.2.0 | 2026-04-01 | Activation Gate 強化（Issue #18）：將 Gate 移至 prompt 首位（User Input 後，優先於一切 Phase）；新增 Step 2.5 即時流程確認（輸出啟動確認後必須立即進入 Phase 0，不得插入其他輸出）；新增 ❌/✅ 反模式/正確流程示範；在 Operating Constraints MUST NOT 新增 Anti-Pattern Ad-hoc Fix 禁令（Phase 0-5 未完成前不得修改 src/tests） |
+| 2.1.0 | 2026-03-03 | Phase 7 UI 模擬驗證：當 Change Set 涉及 UI 變更（UI_ADJUST 或 UI Impact ≠ None）時，Phase 7 新增 UI 模擬驗證步驟，依優先順序執行：專案 E2E 測試 → CDP 即時互動 → Browser 工具；修正 Phase 1 Classification 欄位遺漏 UI_ADJUST 的不一致（Issue #17 擴展） |
+| 2.0.0 | 2026-03-02 | UI_ADJUST Classification：新增第四種變更分類「UI_ADJUST」，適用於功能穩定但 UI 呈現層需調整的情境（CSS/styling、版面配置、元件視覺、互動細節、RWD、a11y）；同步更新 spec.md AC 的 UI 描述 + Phase 8 產出 ui-change-record.md 供 unify-flow 消費；獨立 Scope 門檻（> 10 RC）；Phase 6 G 通道優先；Phase 4 plan 可最小化；安全邊界：需新增 AC 或改行為時自動升級為 SPEC_CHANGE |
+| 1.9.0 | 2026-03-02 | Cross-Feature BUGFIX 範圍：BUGFIX 模式下程式碼修正不受 Feature 邊界限制，不得以「屬於其他 Feature」拒絕修正；新增 Operating Constraints Cross-Feature BUGFIX 子章節；Phase 0 Bug-Fix 模式新增跨 Feature 條款；Phase 2 spec 掃描改為可選；Progressive Disclosure 新增 BUGFIX 模式例外 |
+| 1.8.0 | 2026-03-02 | Activation Gate 機制：強制意圖分類（提問/修正需求）+ 啟動確認輸出 + 流程鎖定，防止 AI 滑入 ad-hoc 修復模式；核心口訣提前至 Phase 0 前；DoD 新增 BUGFIX 模式例外條款；Quick Reference Scope 門檻修正（Issue #14/#16） |
+| 1.7.0 | 2026-03-01 | Scope Threshold 改為僅計算 SPEC_CHANGE 類 RC（≤ 5），BUGFIX 類 RC 不計入閾值（仍受檔案數 ≤ 20 保護）；Phase 1 Scope Check 輸出格式更新為分離顯示 SPEC_CHANGE / BUGFIX 計數（Issue #13） |
+| 1.6.0 | 2026-02-27 | PR-Review 修復模式：`--default` 新增第三層偵測 `.artifacts/pr-review-report-*.md`，若狀態為 NOT READY / REVIEW WITH CAUTION 則讀取 CRITICAL/HIGH/MEDIUM 問題作為變更描述來源；Phase 0 新增步驟 7 pr-review 報告偵測（Issue #10） |
 | 1.5.0 | 2026-02-16 | Bug-Fix 模式：`--default` 模式新增 `.artifacts/bug-fix-list-feature-*.md` 優先讀取；Phase 0 新增 bug-fix 清單偵測，自動切換 Bug-Fix 模式（Classification=BUGFIX、Impact 限 code+tests、Scope 放寬）；支援 code-check 非功能回歸自動分流 |
 | 1.4.0 | 2026-02-08 | 報告命名統一：`verify-report-feature-*` → `code-check-report-feature-*`，消除 agent 串接 glob 混淆 |
 | 1.3.0 | 2026-02-03 | Handoff 重構（移除 trace、新增 code-check + pre-unify-check）、--default 模式支援 code-check 報告、Phase 0 整合 code-check 報告、Scope 檔案數門檻、Next Steps 修正、Phase 7 步驟編號修正 |
@@ -107,6 +115,10 @@
 
 | 版本 | 日期 | 變更說明 |
 |------|------|----------|
+| 1.13.0 | 2026-04-02 | 移除 pytest-xdist 並行測試機制（改為串行執行、移除 serial 標記）；新增 §1.5 Lint Baseline（增量 Lint 管控 + `.artifacts/lint-baseline.json`）；新增 Phase 4.5 Skip Quality Analysis + `.flowkit/allowed-skips.md` 白名單；新增 §0.3.1 UI 偵測 + `.flowkit/ui-test-targets.md` 範本；L3.5 用字修正（債測→偵測）（Issues #21, #23, xdist 移除） |
+| 1.12.0 | 2026-04-01 | L3.5 Usability Gate（Issue #19）：新增第六層驗證—啟動腳本可用性（U1）、首頁可及性（U2）、環境一致性（U3 WARNING）、Zombie Process 債測（U4 WARNING）；U1/U2 FAIL 阻斷 L4；新增 `--skip-usability` 旗標；証暫「程式能跑 ≠ 使用者能啟動」的現實差距（Issue #19） |
+| 1.11.0 | 2026-03-03 | L4 新增策略 C — CDP 即時互動驗證：當策略 A 不可用時，透過 CDP 連線執行即時 E2E 驗證，支援 Electron（`--remote-debugging-port`）、Flask / Web（Chrome DevTools MCP）；降級路徑更新為 A → C → B → SKIP；解決 AI Agent 環境 E2E timeout 與無法測試應用整合層（CSP 違規、自訂協議、file path）的缺口（Issue #17） || 1.10.0 | 2026-03-01 | E2 BUGFIX Triage 擴充：將 🔵 DEFERRED 項目納入 Triage 評估範圍（原僅 🟡 LOW），成本 ≤ MEDIUM 且不需改 spec 則分流為 BUGFIX；Escalation Log 🔵 DEFERRED 等級行動更新為 Triage 分流（Issue #13） |
+| 1.9.0 | 2026-02-27 | Phase 5 新增 E2 BUGFIX Triage：所有層級的 🟡 LOW 項目統一分流（BUGFIX → bug-fix-list / DEFERRED → TD），TD 登記流程新增 BUGFIX 排除條件，DoD 更新為分流聯動，報告範本新增 Triage 結果區段 + bug-fix-list 提示（Issue #7） |
 | 1.8.0 | 2026-02-16 | 非功能回歸分流（Bug-Fix Triage）：§2.5 新增四步法分類分流機制（FIXTURE-POLLUTION/TEST-DATA/API-CHANGE/ENV-TOOL）、成本評估（EASY/MEDIUM→refine-loop、HIGH→TD）、自動產出 `.artifacts/bug-fix-list-feature-*.md`、新增 Bug-Fix handoff 至 refine-loop；pytest-xdist 改為自動安裝 + 安裝失敗降級串行（取代不降級策略） |
 | 1.7.0 | 2026-02-15 | pytest-xdist 未安裝改為自動安裝（不降級）、慢測試閾值調整為 30 秒（原 10 秒） |
 | 1.6.0 | 2026-02-15 | 慢測試自動標記 + serial 標記：conftest.py `pytest_collection_modifyitems` 根據 `test-durations.json` 歷史耗時自動標記 `@pytest.mark.slow`、新增 `@pytest.mark.serial` 不可並行測試標記、分批策略更新為 `not slow and not serial` / `slow or serial`、pytest-xdist 加入範本必備依賴 |
@@ -123,6 +135,7 @@
 
 | 版本 | 日期 | 變更說明 |
 |------|------|----------|
+| 1.4.0 | 2026-02-28 | 成本優先分流架構：所有嚴重性問題皆先評估修正成本（Quick-Fix/Moderate/Heavy），Quick-Fix 與 Moderate 由 pr-review 直接修正，Heavy 依嚴重性分流（CRITICAL/HIGH/MEDIUM → refine-loop、LOW → Tech Debt）；移除「唯讀原則」矛盾；§7.3 SWITCH 改為成本優先決策；§7.4 修正成本評估準則擴展至所有嚴重性（Issue #12） |
 | 1.3.0 | 2026-02-15 | 新增 Phase 7.6 TD Closure Verification：PR Review 時驗證 TD 結案一致性（正向：TD Ref 未結案 → WARNING；反向：PR 修改 TD Component 但未結案 → INFO） |
 | 1.2.0 | 2025-07-12 | §7.5 Tech Debt 登錄 Enhanced Schema：新增 Type/Source/Component/Milestone-Candidate/Feature-Origin/Last-Detected/Detection-Count/Dedup-Key/Evidence-Ref 欄位 + 去重機制 |
 | 1.1.0 | 2026-02-12 | Phase 0.4 PR Tool Readiness（gh CLI 安裝/授權檢查 + 自動安裝引導）、Phase 7.5 Tech Debt 明確登錄流程（寫入 docs/technical-debt.md）、Phase 8.4 三層 PR 建立策略（Strategy A/B/C） |

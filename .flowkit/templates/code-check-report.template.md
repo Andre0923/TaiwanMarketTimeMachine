@@ -176,7 +176,20 @@
 |---|------|------|------|----------|
 | E{N} | 🔴/🟡/🔵 | {ITEM} | {DESCRIPTION} | {ACTION} |
 
-> 等級：🔴 HIGH（阻斷）/ 🟡 LOW（下次迭代）/ 🔵 DEFERRED（人工/跨平台）
+> 等級：🔴 HIGH（阻斷）/ 🟡 LOW（E2 BUGFIX Triage 分流）/ 🔵 DEFERRED（人工/跨平台）
+
+---
+
+## E2 BUGFIX Triage 結果
+
+| # | 來源層級 | 問題 | Spec Impact | 成本 | 分流 |
+|---|----------|------|-------------|------|------|
+| BF{N} | L{X} | {ITEM} | None | EASY/MEDIUM | BUGFIX → bug-fix-list |
+| — | L{X} | {ITEM} | 需修改 | HIGH | DEFERRED → TD |
+
+**Bug-Fix List**：`.artifacts/bug-fix-list-feature-{FEATURE_ID}.md`（{N} 項）
+
+> ⚠️ 發現 {N} 個可立即修復的 E2 BUGFIX 問題，建議執行 `refine-loop --default` 自動處理
 
 ---
 
@@ -192,6 +205,7 @@
 - [ ] 驗證報告已產出至 `.artifacts/code-check-report-feature-{FEATURE_ID}.md`
 - [ ] 所有啟動的服務已關閉
 - [ ] Escalation Log 已記錄需人類處理的項目
+- [ ] 🟡 LOW 已完成 E2 BUGFIX Triage 分流
 - [ ] 最終判定已明確（PASS / CONDITIONAL / FAIL）
 
 ### 禁止殘留

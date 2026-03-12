@@ -14,7 +14,7 @@ handoffs:
 > **用途**：在 Plan 階段完成後，檢查 Feature Plan 與現有系統的非意圖性衝突  
 > **觸發時機**：`/speckit.plan` 完成後、`/speckit.tasks` 執行前  
 > **套件**：FlowKit  
-> **版本**：1.1.0
+> **版本**：1.2.0
 
 ---
 
@@ -274,15 +274,55 @@ Feature-level 的 `contracts/`、`data-model.md` 在 SDD 架構中本質上是 S
 | C1 | 範圍溢出 | Plan 涉及 Spec 未聲明的變更區域 | HIGH |
 | C2 | 隱性依賴 | Plan 的修改會影響未列出的模組 | MEDIUM |
 | C3 | 副作用風險 | Plan 的架構決策可能影響現有功能 | MEDIUM |
+| C4 | Unify Flow 項目誤置 | Plan 的實作 Phase 中出現應透過 Unify Flow 執行的任務 | MEDIUM |
+
+**C4 偵測條件**（任一滿足即觸發）：
+
+| 條件 | 說明 |
+|------|------|
+| Phase 含 checkbox + `specs/system/**` 路徑 | 實作 Phase 中用 `- [ ]` 列出涉及 System Spec 的修改項目 |
+| Phase 含「Unify Flow」「MUST 透過 Unify Flow」等警告 | 段落附有 Unify Flow 相關警告文字 |
+
+**C4 建議修正格式**：
+
+報告 MUST 提供具體的改寫建議，將 checklist 格式改為備忘錄格式，範例如下：
+
+```markdown
+### Phase X: 文件更新（Unify Flow 前置工作備忘）
+
+> ⚠️ **此 Phase 不是實作 Checklist**，下列項目 MUST 透過 **Unify Flow** 統一執行。
+
+**待 Unify Flow 合併的 System Spec 變更清單**：
+- `specs/system/ui/ui-structure.md`：新增 Screen [UI-SCR-NNN]
+- `specs/system/ui/ux-guidelines.md`：新增 Pattern [UI-PAT-NNN]
+```
 
 #### D. 細節誤用檢查
 
 | ID | 檢查項目 | 說明 | 嚴重性 |
 |----|----------|------|--------|
-| D1 | ID 引用錯誤 | 引用的 UI ID / Entity ID 不存在 | HIGH |
+| D1 | ID 引用錯誤或碰撞 | 引用的 UI ID / Entity ID 不存在，或與 System Spec 已定義的 ID 碰撞 | HIGH |
 | D2 | 命名不一致 | 與專案命名慣例不符 | MEDIUM |
 | D3 | 路徑錯誤 | Plan 中的檔案路徑格式錯誤 | MEDIUM |
 | D4 | 版本不符 | 引用的套件版本與專案不一致 | LOW |
+
+**D1 ID 碰撞建議修正值計算規則**：
+
+當 Plan 中定義的 ID 與 System Spec 已存在的 ID 碰撞時，AI MUST 執行以下步驟：
+
+1. **讀取 System Spec** 中該 ID 類型（SCR / CMP / PAT / STATE 等）的現有最大編號
+2. **以「最大編號 + 1」為起始值**，為碰撞的 ID 連續遞補
+3. **在報告中列出「對照表」**：舊 ID → 建議新 ID
+
+報告格式範例：
+
+```markdown
+| ID | 類別 | 嚴重性 | 說明 | 建議修正值 |
+|----|------|--------|------|------------|
+| ISSUE-D1 | D. 細節誤用 | HIGH | [UI-STATE-001] 與 System Spec 碰撞（現有語意：視窗載入狀態） | Plan 中 3 個 STATE 建議重新編號：[UI-STATE-001]→[UI-STATE-003]、[UI-STATE-002]→[UI-STATE-004]、[UI-STATE-003]→[UI-STATE-005] |
+```
+
+> **附帶效益**：AI 可在同一次 check 中對所有碰撞 ID 一次性給出完整對照表，人工只需確認後即可直接修正。
 
 #### E. 整合建議（非阻擋性）
 
@@ -320,9 +360,9 @@ Feature-level 的 `contracts/`、`data-model.md` 在 SDD 架構中本質上是 S
 
 ### 確定問題（必須處理）
 
-| ID | 類別 | 嚴重性 | 說明 | 建議修正 |
-|----|------|--------|------|----------|
-| ... | ... | ... | ... | ... |
+| ID | 類別 | 嚴重性 | 說明 | 建議修正 | 建議修正值 |
+|----|------|--------|------|----------|------------|
+| ... | ... | ... | ... | ... | （D1 碰撞時填入對照表；C4 時附改寫範例；其他填 — ） |
 
 ### 待確認項目（需人工判斷）
 

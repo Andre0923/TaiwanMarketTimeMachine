@@ -1,15 +1,16 @@
 ---
 milestone: M03
 system_context: true
-status: Draft  # 允許值: Draft | In Progress | Implemented | Unified
+status: In Progress  # 允許值: Draft | In Progress | Implemented | Unified
 created: 2026-03-02
 updated: 2026-03-02
+implement_baseline_commit: "fe4433a"
 ---
 
 # Feature Specification: Strategy Grid 核心
 
 > **Feature ID**: 003-strategy-grid  
-> **Status**: Draft
+> **Status**: In Progress
 
 ---
 

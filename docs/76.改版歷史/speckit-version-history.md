@@ -47,6 +47,7 @@
 
 | 版本 | 日期 | 變更說明 |
 |------|------|----------|
+| 1.5.0 | 2026-02-27 | §7 Next Actions 以修正成本取代嚴重度作為分流準則；新增 Quick-Fix Triage 三級成本評估（Quick-Fix / Moderate / Heavy）；§6 報告結構新增 Quick-Fix List 區塊，匯總修正成本低的 LOW/MEDIUM findings（Issue #8） |
 | 1.4.0 | 2026-02-14 | F 通道新增遞進精鍊感知規則（Progressive Refinement Awareness）；G 通道新增 L0 Maturity 降級機制（L0 場景 G1/G5/G6 降級）；E 通道新增 Affected Files 容差規則（間接影響檔案降級） |
 | 1.3.0 | 2026-02-09 | §9.5/§8.5 從「提醒使用者」升級為「AI 自動注入標記」：Remediation 修改 US/AC 時自動加上 [MODIFIED]/[NEW]/[DELETED]（提案 #1 實施） |
 | 1.2.0 | 2026-02-08 | 新增 Spec 修訂標記提醒（§9.5/§8.5）：Remediation 修改 US/AC 後提醒使用者加上 [MODIFIED]/[NEW]/[DELETED] 標記 |

@@ -30,18 +30,17 @@ This command supports **two operating modes** to balance interaction quality and
 
 | Mode | Trigger | Behavior | Best For |
 |------|---------|----------|----------|
-| **Interactive** (Default) | No special flag | One question at a time with recommendations | Deep clarification, complex specs |
-| **Batch** | `--batch` or 使用者說「批次模式」「多題問答」「一次問完」 | All questions presented at once | Cost-sensitive sessions, simple specs |
+| **Batch** (Default) | `--default`, `--batch`, or no special flag | All questions presented at once | Standard usage, handoff from specify |
+| **Interactive** | `--interactive` or 使用者說「逐題模式」「one by one」 | One question at a time with recommendations | Deep clarification requiring dialogue |
 
 ### Mode Detection Rules
 
-**Use Batch Mode when** user input contains ANY of:
-- `--batch` flag
+**Use Batch Mode when** (default):
+- `$ARGUMENTS` is empty, `--default`, or `--batch`
 - Keywords: 「批次模式」「多題問答」「一次問完」「batch」「all at once」
 
 **Use Interactive Mode when**:
-- No batch trigger detected (default)
-- User explicitly says 「逐題模式」「interactive」「one by one」
+- User explicitly passes `--interactive` or says 「逐題模式」「interactive」「one by one」
 
 ---
 

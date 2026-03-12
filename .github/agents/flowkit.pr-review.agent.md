@@ -20,7 +20,7 @@ handoffs:
 > **用途**：在 Unify Flow 完成後、PR 提交前，以資深架構師視角進行六維程式碼審查，產出結構化報告與 PR Description  
 > **觸發時機**：SDD 流程 `unify-flow` → **`pr-review`** → [NOT READY→`refine-loop`→重跑] / [READY→PR 提交]  
 > **核心理念**：AI 擔任虛擬 Reviewer，填補 code-check（Runtime 可執行性）與人類 Review（高階決策）之間的品質缺口  
-> **版本**：1.1.0  
+> **版本**：1.4.0  
 > **套件**：FlowKit
 
 ---
@@ -76,9 +76,9 @@ $ARGUMENTS
 
 - **依六維順序執行**：D1 → D2 → D3 → D4 → D5 → D6
 - **實際讀取程式碼**：使用檔案讀取工具分析變更，不得猜測品質
-- **嚴格阻擋規則**：CRITICAL 或 HIGH 問題存在 → 🔴 NOT READY（MUST 修正）
-- **MEDIUM 警告**：MEDIUM 問題 → 🟠 REVIEW WITH CAUTION（SHOULD 修正）
-- **LOW 自主決策**：評估修正成本，成本合理則修正後提交 PR，成本過高則記錄後直接 PR
+- **成本優先原則**：所有嚴重性問題皆先評估修正成本（§7.4），Quick-Fix / Moderate → pr-review 直接修正
+- **Heavy 成本阻擋**：Heavy 成本的 CRITICAL/HIGH → 🔴 NOT READY；Heavy MEDIUM → 🟠 CAUTION → refine-loop
+- **Heavy LOW 放行**：Heavy 成本的 LOW → Tech Debt → 直接 PR
 - **品質總評**：MUST 對整體品質評分（A-F），若 D/F 等級 MUST 建議回溯至更早階段
 - **產出雙報告**：審查報告（`.artifacts/`）+ PR Description（`.artifacts/`）
 - **遵循 Progressive Disclosure Protocol**
@@ -88,7 +88,7 @@ $ARGUMENTS
 - **修改 `specs/system/**`**：System Spec 保護不受影響
 - **跳過 CRITICAL / HIGH 問題**：不得將嚴重問題降級或忽略
 - **偽造品質評分**：不得為了「通過」而給出不實評分
-- **在 CRITICAL / HIGH / MEDIUM 存在時自動提交 PR**
+- **在存在 Heavy 成本的 CRITICAL / HIGH / MEDIUM 問題未處理時自動提交 PR**
 - **預防性擴讀**：在資料充足時讀取超出必要範圍的內容
 - **猜測結果**：不得假設程式碼品質良好，MUST 實際驗證
 
@@ -147,45 +147,49 @@ $ARGUMENTS
        ── ← 變更範圍、動機、影響
 ```
 
-### 嚴重性與阻擋規則
+### 嚴重性與阻擋規則（成本優先）
 
-| 嚴重性 | 定義 | 阻擋判定 |
-|--------|------|----------|
-| 🔴 CRITICAL | 安全漏洞、System 衝突、資料破壞風險 | **MUST 修正**，阻擋 PR |
-| 🟠 HIGH | 違反憲法 NON-NEGOTIABLE、重大設計問題 | **MUST 修正**，阻擋 PR |
-| 🟡 MEDIUM | 程式碼品質、命名不一致、中等設計問題 | **SHOULD 修正**，警告 |
-| 🟢 LOW | 風格建議、微優化 | AI 自主判斷修正或放行 |
+| 嚴重性 | 定義 | Quick-Fix / Moderate | Heavy |
+|--------|------|---------------------|-------|
+| 🔴 CRITICAL | 安全漏洞、System 衝突、資料破壞風險 | ✅ 直接修正 | 🔴 NOT READY → refine-loop |
+| 🟠 HIGH | 違反憲法 NON-NEGOTIABLE、重大設計問題 | ✅ 直接修正 | 🔴 NOT READY → refine-loop |
+| 🟡 MEDIUM | 程式碼品質、命名不一致、中等設計問題 | ✅ 直接修正 | 🟠 CAUTION → refine-loop |
+| 🟢 LOW | 風格建議、微優化 | ✅ 直接修正 | Tech Debt → 放行 |
 
-### 阻擋規則判定
+### 阻擋規則判定（成本優先）
 
 ```
-IF CRITICAL > 0 OR HIGH > 0:
-  → 狀態 = 🔴 NOT READY
-  → MUST 進入 refine-loop 修正後重跑 pr-review
+STEP 1 — 成本評估（所有嚴重性）
+  FOR EACH 問題（CRITICAL / HIGH / MEDIUM / LOW）：
+    → 評估修正成本（見 §7.4 修正成本評估準則）
+    → 標記為：Quick-Fix / Moderate / Heavy
 
-ELIF MEDIUM > 0:
-  → 狀態 = 🟠 REVIEW WITH CAUTION
-  → MUST 進入 refine-loop 修正 MEDIUM 問題
-  → 修正後重跑 pr-review
+STEP 2 — 直接修正（pr-review 就地處理）
+  FOR EACH Quick-Fix 或 Moderate 成本問題（不論嚴重性）：
+    → pr-review 直接修正
+    → 修正完成後重跑 pr-review 驗證
 
-ELIF LOW > 0:
-  → AI 評估每個 LOW 的修正成本
-  → IF 總修正成本合理（< 30 分鐘等效工作量）:
-       → 修正所有 LOW → 重跑 pr-review
-  → ELSE:
-       → 記錄為 Tech Debt → 狀態 = 🟢 READY FOR PR
+STEP 3 — Heavy 成本分流
+  FOR EACH Heavy 成本問題：
+    IF CRITICAL / HIGH / MEDIUM → 交由 refine-loop 修正
+    IF LOW → 記錄為 Tech Debt（§7.5）
 
-ELSE:
-  → 狀態 = 🟢 READY FOR PR
+STEP 4 — 最終狀態判定
+  IF 存在未修正的 CRITICAL / HIGH（Heavy）：
+    → 狀態 = 🔴 NOT READY → MUST refine-loop
+  ELIF 存在未修正的 MEDIUM（Heavy）：
+    → 狀態 = 🟠 REVIEW WITH CAUTION → refine-loop
+  ELSE（全部已修正 或 僅 LOW Heavy → Tech Debt）：
+    → 狀態 = 🟢 READY FOR PR
 ```
 
 ### 品質等級與回溯決策
 
 | 等級 | 標準 | AI 決策 |
 |------|------|---------|
-| **A（優秀）** | 0 CRITICAL/HIGH/MEDIUM，≤2 LOW | 直接 PR |
-| **B（良好）** | 0 CRITICAL/HIGH，≤3 MEDIUM，≤5 LOW | 修正 MEDIUM 後 PR |
-| **C（可接受）** | 0 CRITICAL，≤2 HIGH，≤5 MEDIUM | 修正 HIGH/MEDIUM 後 PR |
+| **A（優秀）** | 0 CRITICAL/HIGH/MEDIUM，≤2 LOW | 成本評估 LOW → 直接修正 / Tech Debt → PR |
+| **B（良好）** | 0 CRITICAL/HIGH，≤3 MEDIUM，≤5 LOW | 成本評估 → Quick-Fix/Moderate 直接修正；Heavy MEDIUM → refine-loop |
+| **C（可接受）** | 0 CRITICAL，≤2 HIGH，≤5 MEDIUM | 成本評估 → Quick-Fix/Moderate 直接修正；Heavy → refine-loop |
 | **D（需改善）** | ≤2 CRITICAL 或 >2 HIGH 或 >5 MEDIUM | 建議回到 `implement` 重做 |
 | **F（需重新規劃）** | >2 CRITICAL 或架構性問題普遍 | 建議回到 `plan` 或 `specify` |
 
@@ -540,26 +544,27 @@ D（需改善）：≤2 CRITICAL 或 >2 HIGH 或 >5 MEDIUM
 F（需重新規劃）：>2 CRITICAL 或架構性問題普遍
 ```
 
-#### 7.3 AI 自主決策
+#### 7.3 AI 自主決策（成本優先）
 
 ```
 SWITCH 品質等級:
 
   CASE A:
-    IF LOW 存在 AND 修正成本合理:
-      → 自動修正 LOW → 重跑 pr-review
-    ELSE:
-      → 🟢 READY FOR PR → 自動執行 PR 流程
+    → 對所有 LOW 執行成本評估
+    → Quick-Fix / Moderate → 直接修正 → 重跑 pr-review
+    → Heavy → Tech Debt → 🟢 READY FOR PR
 
   CASE B:
-    → 🟠 REVIEW WITH CAUTION
-    → 自動進入 refine-loop 修正 MEDIUM
-    → 修正後重跑 pr-review
+    → 對所有 MEDIUM + LOW 執行成本評估
+    → Quick-Fix / Moderate → 直接修正 → 重跑 pr-review
+    → MEDIUM Heavy → 🟠 REVIEW WITH CAUTION → refine-loop
+    → LOW Heavy → Tech Debt
 
   CASE C:
-    → 🔴 NOT READY
-    → 自動進入 refine-loop 修正 HIGH + MEDIUM
-    → 修正後重跑 pr-review
+    → 對所有 HIGH + MEDIUM + LOW 執行成本評估
+    → Quick-Fix / Moderate → 直接修正 → 重跑 pr-review
+    → HIGH / MEDIUM Heavy → 🔴 NOT READY → refine-loop
+    → LOW Heavy → Tech Debt
 
   CASE D:
     → ⛔ REPLAN SUGGESTED
@@ -574,18 +579,17 @@ SWITCH 品質等級:
     → 詢問人類確認回溯目標階段
 ```
 
-#### 7.4 LOW 修正成本評估準則
+#### 7.4 修正成本評估準則（適用所有嚴重性）
 
-| 修正成本 | 判定 | 行動 |
-|----------|------|------|
-| 1-3 行程式碼修改 | 低成本 | 自動修正 |
-| 需新增函式/重構邏輯 | 中成本 | 自動修正（若 < 30 min 等效） |
-| 需跨模組修改 | 高成本 | 記錄為 Tech Debt，不修正 |
-| 需架構調整 | 過高成本 | 記錄為 Tech Debt，不修正 |
+| 成本等級 | 判定條件 | 範例 | 行動 |
+|----------|---------|------|------|
+| Quick-Fix（≤5 行 / ≤5 min） | 改名、補欄位、加標記、修正格式 | 變數命名修正、補 Docstring 一行摘要 | ✅ pr-review 直接修正 |
+| Moderate（6-20 行 / 5-30 min） | 小段落重寫、新增小函式、邏輯微調 | 新增 validation 函式、重寫錯誤處理 | ✅ pr-review 直接修正 |
+| Heavy（>20 行 / >30 min） | 跨模組修改、架構調整、大規模重構 | 模組拆分、API 重新設計 | ❌ 依嚴重性分流（STEP 3） |
 
-#### 7.5 Tech Debt 登錄（僅 LOW 放行時）
+#### 7.5 Tech Debt 登錄（Heavy 成本 LOW 放行時）
 
-當有 LOW 問題被判定為「成本過高不修正」時，MUST 將其登錄至 `docs/technical-debt.md`：
+當有 LOW 問題被判定為 Heavy 成本且不進入 refine-loop 時，MUST 將其登錄至 `docs/technical-debt.md`：
 
 1. 讀取 `docs/technical-debt.md` 現有內容
 2. 為每個放行的 LOW 問題產生 TD entry：
@@ -830,10 +834,10 @@ implement → code-check → pre-unify-check → trace → requirement-sync → 
 | 規則 | 說明 |
 |------|------|
 | 六維順序 | D1 → D2 → D3 → D4 → D5 → D6 |
-| CRITICAL/HIGH 阻擋 | 存在任一 → 🔴 NOT READY |
-| MEDIUM 警告 | 存在 → 🟠 REVIEW WITH CAUTION → refine-loop |
-| LOW 自主判斷 | 修正成本合理 → 修正；過高 → Tech Debt |
+| 成本優先原則 | 所有嚴重性皆先評估修正成本，Quick-Fix / Moderate → 直接修正 |
+| CRITICAL/HIGH Heavy | 存在 Heavy 成本 → 🔴 NOT READY → refine-loop |
+| MEDIUM Heavy | 存在 Heavy 成本 → 🟠 REVIEW WITH CAUTION → refine-loop |
+| LOW Heavy | Heavy 成本 → Tech Debt，不阻擋 PR |
 | 品質總評 | A-F 等級，D/F → 建議回溯 |
 | 自動 PR | 僅 🟢 READY 時自動執行 |
-| 唯讀原則 | 審查不修改檔案（修正交由 refine-loop） |
 | 產物歸檔 | 報告和 PR Description 存至 `.artifacts/` |

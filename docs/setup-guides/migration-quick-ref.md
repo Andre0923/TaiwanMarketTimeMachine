@@ -34,6 +34,9 @@
 git clone https://github.com/DrDeer119/99.spec-kit-cross-platform-template.git E:\templates\spec-kit-template
 
 # 2. 設定路徑變數並執行遷移
+# ★ 腳本第一步（Step 0）會自動從範本同步遷移工具到目標專案
+#   確保目標專案的 docs/setup-guides/ 將更新為最新版本
+#   請始終從 $templatePath 執行腳本，不要使用目標專案的舊版本
 $templatePath = "E:\templates\spec-kit-template"
 $targetPath = "E:\projects\my-project"  # 修改為你的專案路徑
 
@@ -68,8 +71,10 @@ cd $targetPath
 - `docs/01.開發人員doc/` - 開發人員文件
 - `docs/requirements/Milestone/MNN-*.md` - Milestone 範本
 - `docs/requirements/user-stories/US-X-*.md` - User Stories 範本
-- `docs/setup-guides/migration-*.md` - 遷移文件（未來升級參考）
-- `docs/setup-guides/migrate-to-full-kit.ps1` - 遷移腳本
+- `docs/setup-guides/migration-*.md` - 遷移文件（**Step 0 — 最先執行**）
+- `docs/setup-guides/migrate-to-full-kit.ps1` - 遷移腳本（**Step 0 — 最先執行**）
+- `.flowkit/version-manifest.md` - 指令版號追蹤清單（不存在時建立，已存在時提示比對）
+- `.flowkit/memory/` - AI 記憶初始檔案（**完全無檔案時**從範本複製初始版本）
 
 ### ⚗️ 智慧比對（腳本會提示，需手動判斷）
 - `docs/00.目錄結構.md` - 每個專案結構不同，不存在時建立，已存在時手動合併
@@ -172,6 +177,11 @@ $targetPath = "E:\projects\my-project"
         if (Test-Path $_) { "✅ FlowKit: $_" } else { "❌ FlowKit 未更新: $_" } 
     }
 
+# 驗證 .flowkit/ 追蹤與記憶
+if (Test-Path ".flowkit/version-manifest.md") { "✅ .flowkit/version-manifest.md 存在" } else { "❌ .flowkit/version-manifest.md 未建立" }
+$memFiles = @(Get-ChildItem ".flowkit/memory" -File -ErrorAction SilentlyContinue)
+if ($memFiles.Count -gt 0) { "✅ .flowkit/memory/ 有 $($memFiles.Count) 個記憶檔案" } else { "❌ .flowkit/memory/ 無檔案（請執行 /flowkit.system-context）" }
+
 # 測試功能
 /speckit.specify "Test feature"
 /flowkit.system-context
@@ -188,14 +198,6 @@ if (Test-Path "docs\technical-debt.md") { "✅ docs/technical-debt.md 存在" } 
 
 # 確認測試基礎設施已處理
 if (Test-Path "tests\conftest.py") { "✅ tests/conftest.py 存在" } else { "❌ 需建立（marker 註冊 + 慢測試自動偵測）" }
-```
-
-### 🧪 測試依賴確認
-
-```powershell
-# 確認 pytest-xdist 已安裝（並行測試必備）
-$pyproject = Get-Content "pyproject.toml" -Raw -ErrorAction SilentlyContinue
-if ($pyproject -match "pytest-xdist") { "✅ pytest-xdist 依賴已設定" } else { "⚠️ 缺少 pytest-xdist，執行：uv add pytest-xdist" }
 ```
 
 ### 📁 目錄結構調整建議（參考 `docs/00.目錄結構.md`）
