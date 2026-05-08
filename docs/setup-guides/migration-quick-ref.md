@@ -21,7 +21,7 @@
 |----------|------|------|
 | 🆕 新專案，沒客製化 | **方案 A：完全覆蓋** | `migrate-to-full-kit.ps1 -Force` |
 | 🛠️ 有少量客製化 | **方案 C：智能混合** | `migrate-to-full-kit.ps1` |
-| 🏢 成熟專案，多客製化 | **方案 B：增量遷移** | 手動執行各 Phase |
+| 🏢 已有 SpecKit 專案要升級 | **方案 B：升級現有專案** | `migrate-to-full-kit.ps1` |
 
 ---
 
@@ -34,6 +34,9 @@
 git clone https://github.com/DrDeer119/99.spec-kit-cross-platform-template.git E:\templates\spec-kit-template
 
 # 2. 設定路徑變數並執行遷移
+# ★ 腳本第一步（Step 0）會自動從範本同步遷移工具到目標專案
+#   確保目標專案的 docs/setup-guides/ 將更新為最新版本
+#   請始終從 $templatePath 執行腳本，不要使用目標專案的舊版本
 $templatePath = "E:\templates\spec-kit-template"
 $targetPath = "E:\projects\my-project"  # 修改為你的專案路徑
 
@@ -44,15 +47,82 @@ $targetPath = "E:\projects\my-project"  # 修改為你的專案路徑
 # 3. AI 記憶處理（條件式）
 cd $targetPath
 # 僅當 system-context 不存在時才需建立（遷移不會改變專案結構，已有的上下文仍然有效）
-# 若不存在，在 Copilot Chat 執行：
-/flowkit.system-context
+if (-not (Test-Path ".flowkit/memory/system-context.md")) {
+    # 在 Copilot Chat 執行：/flowkit.system-context
+    Write-Host "⚠️ 尚未建立 system-context，請在 IDE 中執行 /flowkit.system-context"
+} else {
+    Write-Host "✅ system-context 已存在，遷移不影響專案結構，無需重建"
+}
 ```
 
 > ⚠️ **路徑問題排查**：若出現「找不到路徑」錯誤，請：
 > - 確認 Clone 時使用絕對路徑（不要用 `temp-template` 等相對路徑）
 > - 使用 `Test-Path "$templatePath\docs\setup-guides\migrate-to-full-kit.ps1"` 確認路徑存在
 
+> 💡 **Dropbox / 雲端同步環境**：
+> - 若遇到檔案被占用，腳本會自動重試（最多 3 次，每次 2 秒）
+> - 建議將範本 Clone 到 `$env:TEMP` 等非同步目錄
+> - 若仍失敗，暫停同步服務後重試
+
 ---
+
+## 🛠️ 情境 B：升級現有專案（可直接照做）
+
+```powershell
+# ⚠️ 重要：請使用「絕對路徑」避免路徑錯誤
+# 範例假設：
+#   - 範本位置：E:\templates\spec-kit-template
+#   - 目標專案：E:\projects\my-project
+
+# 1. Clone 模板到臨時目錄（注意 Clone 後的絕對路徑）
+git clone https://github.com/DrDeer119/99.spec-kit-cross-platform-template.git E:\templates\spec-kit-template
+
+# 2. 確認遷移腳本路徑存在
+$templatePath = "E:\templates\spec-kit-template"
+$targetPath = "E:\projects\my-project"
+Test-Path "$templatePath\docs\setup-guides\migrate-to-full-kit.ps1"  # 應回傳 True
+
+# 3. 執行自動化遷移（使用絕對路徑）
+& "$templatePath\docs\setup-guides\migrate-to-full-kit.ps1" `
+    -TemplatePath $templatePath `
+    -TargetPath $targetPath
+
+# 4. 確認遷移結果（腳本執行時已自動報告 ✅/❌）
+cd $targetPath
+git status  # 確認新增的檔案是否符合預期
+
+# 5. AI 記憶處理（條件式）
+# 若專案尚未有 system-context，才需要建立：
+if (-not (Test-Path ".flowkit/memory/system-context.md")) {
+    # 在 Copilot Chat 執行：/flowkit.system-context
+    Write-Host "⚠️ 尚未建立 system-context，請在 IDE 中執行 /flowkit.system-context"
+} else {
+    Write-Host "✅ system-context 已存在，遷移不影響專案結構，無需重建"
+}
+```
+
+> ⚠️ **路徑問題排查**：若執行遷移腳本時出現「找不到路徑」錯誤，請：
+> - 確認 Clone 時使用的絕對路徑
+> - 使用 `Test-Path` 確認腳本路徑存在
+> - 避免使用相對路徑（如 `..\temp-template`）
+
+> 💡 **Dropbox / 雲端同步環境注意事項**：
+> - 若遇到「檔案被占用」錯誤，腳本會自動重試（最多 3 次，每次間隔 2 秒）
+> - 建議將範本 Clone 到非同步目錄（如 `$env:TEMP`）
+> - 若重試仍失敗，請暫時暫停雲端同步服務後重新執行
+
+> 範例（使用本機暫存目錄）：
+
+```powershell
+$tempPath = "$env:TEMP\speckit-template-$(Get-Date -Format 'yyyyMMddHHmmss')"
+git clone https://github.com/DrDeer119/99.spec-kit-cross-platform-template.git $tempPath
+$templatePath = $tempPath
+```
+
+> 📁 **後續目錄調整建議**（參考 `docs/00.目錄結構.md`）：
+> - 測試目錄：確保 `tests/` 存在且對應 `src/` 結構
+> - 日誌目錄：確保 `logs/` 存在，日誌不應散落在專案根目錄
+> - 測試產物目錄：建立 `.artifacts/` 存放所有測試產物（coverage、pytest cache、htmlcov 等），並加入 `.gitignore`
 
 ## 📦 遷移涵蓋內容
 
@@ -68,8 +138,10 @@ cd $targetPath
 - `docs/01.開發人員doc/` - 開發人員文件
 - `docs/requirements/Milestone/MNN-*.md` - Milestone 範本
 - `docs/requirements/user-stories/US-X-*.md` - User Stories 範本
-- `docs/setup-guides/migration-*.md` - 遷移文件（未來升級參考）
-- `docs/setup-guides/migrate-to-full-kit.ps1` - 遷移腳本
+- `docs/setup-guides/migration-*.md` - 遷移文件（**Step 0 — 最先執行**）
+- `docs/setup-guides/migrate-to-full-kit.ps1` - 遷移腳本（**Step 0 — 最先執行**）
+- `.flowkit/version-manifest.md` - 指令版號追蹤清單（不存在時建立，已存在時提示比對）
+- `.flowkit/memory/` - AI 記憶初始檔案（**完全無檔案時**從範本複製初始版本）
 
 ### ⚗️ 智慧比對（腳本會提示，需手動判斷）
 - `docs/00.目錄結構.md` - 每個專案結構不同，不存在時建立，已存在時手動合併
@@ -172,6 +244,11 @@ $targetPath = "E:\projects\my-project"
         if (Test-Path $_) { "✅ FlowKit: $_" } else { "❌ FlowKit 未更新: $_" } 
     }
 
+# 驗證 .flowkit/ 追蹤與記憶
+if (Test-Path ".flowkit/version-manifest.md") { "✅ .flowkit/version-manifest.md 存在" } else { "❌ .flowkit/version-manifest.md 未建立" }
+$memFiles = @(Get-ChildItem ".flowkit/memory" -File -ErrorAction SilentlyContinue)
+if ($memFiles.Count -gt 0) { "✅ .flowkit/memory/ 有 $($memFiles.Count) 個記憶檔案" } else { "❌ .flowkit/memory/ 無檔案（請執行 /flowkit.system-context）" }
+
 # 測試功能
 /speckit.specify "Test feature"
 /flowkit.system-context
@@ -188,14 +265,6 @@ if (Test-Path "docs\technical-debt.md") { "✅ docs/technical-debt.md 存在" } 
 
 # 確認測試基礎設施已處理
 if (Test-Path "tests\conftest.py") { "✅ tests/conftest.py 存在" } else { "❌ 需建立（marker 註冊 + 慢測試自動偵測）" }
-```
-
-### 🧪 測試依賴確認
-
-```powershell
-# 確認 pytest-xdist 已安裝（並行測試必備）
-$pyproject = Get-Content "pyproject.toml" -Raw -ErrorAction SilentlyContinue
-if ($pyproject -match "pytest-xdist") { "✅ pytest-xdist 依賴已設定" } else { "⚠️ 缺少 pytest-xdist，執行：uv add pytest-xdist" }
 ```
 
 ### 📁 目錄結構調整建議（參考 `docs/00.目錄結構.md`）

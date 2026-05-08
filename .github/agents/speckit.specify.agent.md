@@ -3,7 +3,7 @@ description: Create or update the feature specification from a natural language 
 handoffs: 
   - label: Clarify Spec Requirements
     agent: speckit.clarify
-    prompt: Clarify specification requirements
+    prompt: --batch
     send: true
   - label: Generate System Context
     agent: flowkit.system-context

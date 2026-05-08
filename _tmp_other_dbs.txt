@@ -1,0 +1,39 @@
+
+=== CMoney資料 ===
+  上市櫃基本資料
+  日ETF持股明細
+  日ETF持股明細202506前
+  日可轉公司債收盤
+  日外資
+  日收盤行情
+  日收盤還原
+  日投信
+  日股利彙總表
+  日指數收盤行情
+  月可轉公司債基本資料
+  月營收
+  月營收速選
+  周可轉公司債集保庫存
+  季財務比率
+  季現金流量
+  季損益
+  季資產負債
+  股利_年股利明細表
+  股利_年股利政策表
+  股利_季股利政策表
+  處置股票
+
+=== D_衍生資料 ===
+  ERROR: ('08004', '[08004] [Microsoft][ODBC Driver 18 for SQL Server][SQL Server]伺服器主體 "tmtdatareader" 在目前的安全性內容下無法存取資料庫 "D_衍生資料
+
+=== BVL策略研究 ===
+  ERROR: ('08004', '[08004] [Microsoft][ODBC Driver 18 for SQL Server][SQL Server]伺服器主體 "tmtdatareader" 在目前的安全性內容下無法存取資料庫 "BVL策略研
+
+=== finlab ===
+  ERROR: ('08004', '[08004] [Microsoft][ODBC Driver 18 for SQL Server][SQL Server]伺服器主體 "tmtdatareader" 在目前的安全性內容下無法存取資料庫 "finlab
+
+=== TEST ===
+  ERROR: ('08004', '[08004] [Microsoft][ODBC Driver 18 for SQL Server][SQL Server]伺服器主體 "tmtdatareader" 在目前的安全性內容下無法存取資料庫 "TEST"。
+
+=== 安杰測試 ===
+  ERROR: ('08004', '[08004] [Microsoft][ODBC Driver 18 for SQL Server][SQL Server]伺服器主體 "tmtdatareader" 在目前的安全性內容下無法存取資料庫 "安杰測試"。

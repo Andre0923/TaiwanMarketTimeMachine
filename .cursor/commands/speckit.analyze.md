@@ -203,12 +203,40 @@ Output a Markdown report (no file writes) with the following structure:
 - Duplication Count
 - Critical Issues Count
 
+**Quick-Fix List（建議立即處理）：**
+
+對所有 LOW / MEDIUM findings 進行成本評估後，將修正成本低的項目匯總為 Quick-Fix List：
+
+| # | Finding ID | Location | Fix Description | Est. Lines | Est. Time |
+|---|-----------|----------|-----------------|-----------|----------|
+| 1 | F2 | spec.md:L45 | （範例）欄位命名對齊 data-model.md | ~2 行 | < 2 min |
+
+> 💡 以上修正建議在 Remediation 時一次處理完畢，預估總時間 < N 分鐘。
+
+（若無符合條件的 Quick-Fix 項目，輸出「無 Quick-Fix 項目」即可。）
+
 ### 7. Provide Next Actions
 
 At end of report, output a concise Next Actions block:
 
-- If CRITICAL issues exist: Recommend resolving before `/speckit.implement`
-- If only LOW/MEDIUM: User may proceed, but provide improvement suggestions
+**Severity-based Recommendation：**
+
+- If CRITICAL issues exist: MUST resolve before `/speckit.implement`
+- If HIGH issues exist: Strongly recommend resolving before `/speckit.implement`
+- If only LOW/MEDIUM: See Quick-Fix Triage below
+
+**Quick-Fix Triage（成本導向分流）：**
+
+對所有 LOW / MEDIUM findings，依修正成本進行二次分流：
+
+| 修正成本 | 判定條件 | 建議動作 |
+|----------|---------|----------|
+| Quick-Fix（≤ 5 行 or ≤ 5 分鐘） | 改名、補欄位、加標記、補文字等 | ✅ 建議立即修正（納入 Quick-Fix List） |
+| Moderate（6-20 行 or 5-30 分鐘） | 小段落重寫、新增小區段等 | ✅ 建議一併修正 |
+| Heavy（> 20 行 or > 30 分鐘） | 架構調整、跨檔案重構等 | 🟡 延後處理（記錄為改善建議） |
+
+**核心原則**：既然已投入分析成本，修正成本不高的 findings SHOULD 在進入 implement 前一次到位。判斷準則是**修正成本**，而非嚴重度等級。
+
 - Provide explicit command suggestions: e.g., "Run /speckit.specify with refinement", "Run /speckit.plan to adjust architecture", "Manually edit tasks.md to add coverage for 'performance-metrics'"
 
 ### 8. Offer Remediation

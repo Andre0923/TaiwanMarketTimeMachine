@@ -1,7 +1,7 @@
 # 功能說明 — flowkit.pr-review
 
-> **版本**：1.1.0  
-> **最後更新**：2026-02-12  
+> **版本**：1.4.0  
+> **最後更新**：2026-02-28  
 > **對應指令檔**：`.cursor/commands/flowkit.pr-review.md` / `.github/agents/flowkit.pr-review.agent.md`
 
 ---
@@ -110,26 +110,26 @@ implement → code-check → pre-unify-check → trace → requirement-sync → 
 
 ## 4. 阻擋規則與品質等級
 
-### 4.1 嚴重性與阻擋
+### 4.1 嚴重性與阻擋（成本優先）
 
-| 嚴重性 | 阻擋 PR | 處理方式 |
-|--------|---------|----------|
-| 🔴 CRITICAL | ✅ 阻擋 | MUST 修正（→ refine-loop） |
-| 🟠 HIGH | ✅ 阻擋 | MUST 修正（→ refine-loop） |
-| 🟡 MEDIUM | ⚠️ 警告 | SHOULD 修正（→ refine-loop） |
-| 🟢 LOW | ❌ 不阻擋 | AI 自主判斷：修正成本合理則修正，否則記錄為 Tech Debt |
+| 嚴重性 | 阻擋 PR | Quick-Fix / Moderate | Heavy |
+|--------|---------|---------------------|-------|
+| 🔴 CRITICAL | ✅ 阻擋（僅 Heavy） | ✅ 直接修正 | 🔴 NOT READY → refine-loop |
+| 🟠 HIGH | ✅ 阻擋（僅 Heavy） | ✅ 直接修正 | 🔴 NOT READY → refine-loop |
+| 🟡 MEDIUM | ⚠️ 警告（僅 Heavy） | ✅ 直接修正 | 🟠 CAUTION → refine-loop |
+| 🟢 LOW | ❌ 不阻擋 | ✅ 直接修正 | Tech Debt → 放行 |
 
 ### 4.2 品質等級
 
 | 等級 | 條件 | AI 決策 |
 |------|------|---------|
-| **A（優秀）** | 0 C/H/M，≤2 LOW | 🟢 直接 PR |
-| **B（良好）** | 0 C/H，≤3 M，≤5 LOW | 🟠 修正 M 後 PR |
-| **C（可接受）** | 0 C，≤2 H，≤5 M | 🔴 修正 H/M 後 PR |
+| **A（優秀）** | 0 C/H/M，≤2 LOW | 🟢 成本評估 LOW → 直接修正 / Tech Debt → PR |
+| **B（良好）** | 0 C/H，≤3 M，≤5 LOW | 🟠 成本評估 → Quick-Fix/Moderate 直接修正；Heavy M → refine-loop |
+| **C（可接受）** | 0 C，≤2 H，≤5 M | 🔴 成本評估 → Quick-Fix/Moderate 直接修正；Heavy → refine-loop |
 | **D（需改善）** | ≤2 C 或 >2 H 或 >5 M | ⛔ 建議回到 implement |
 | **F（需重新規劃）** | >2 C 或架構性問題 | ⛔ 建議回到 plan/specify |
 
-### 4.3 AI 自主決策流程
+### 4.3 AI 自主決策流程（成本優先）
 
 ```
 使用 pr-review ＝ 人類已決定要 PR
@@ -138,22 +138,23 @@ implement → code-check → pre-unify-check → trace → requirement-sync → 
          │
     品質等級判定
          │
-    ┌────┴────┬────────┬──────────┐
-    │         │        │          │
-   A 等級   B/C 等級  D 等級    F 等級
-    │         │        │          │
-  LOW 評估  refine   建議回到   建議回到
-    │       -loop    implement  plan/specify
-    │         │        │          │
-  成本合理?  修正後    列出問題   列出架構
-    │  │    重跑      詢問人類   性問題
-   是  否  pr-review  確認       詢問人類
-    │  │                        確認
-  修正 Tech
-  LOW  Debt
-    │  │
-   └──┘
-  🟢 PR
+    ──── 成本評估（所有嚴重性）────
+         │
+    ┌────┴────────────┬───────────┐
+    │                  │             │
+ Quick-Fix/         Heavy          D/F 等級
+ Moderate           成本
+    │                │              │
+  直接修正       依嚴重性分流    建議回到
+    │            ┌───┴───┐    plan/specify
+  重跑         C/H/M    LOW      詢問人類
+ pr-review     │        │       確認
+             refine   Tech
+             -loop    Debt
+               │        │
+               └──┬───┘
+                  │
+             🟢 PR（若無 Heavy C/H/M）
 ```
 
 ---
@@ -171,11 +172,11 @@ implement → code-check → pre-unify-check → trace → requirement-sync → 
 
 ## 6. 核心特色
 
-### 6.1 比傳統 Code Review 更嚴格
+### 6.1 比傳統 Code Review 更積極
 
 - AI 開發時間大幅縮短 → **不需要為時間成本而放棄品質**
-- CRITICAL 和 HIGH 都**強制阻擋**（不僅是警告）
-- MEDIUM 也**強制修正**（傳統 Review 可能放過）
+- 所有嚴重性問題皆先評估修正成本，**低成本問題當場修正**
+- 僅有 Heavy 成本的 CRITICAL/HIGH/MEDIUM 才交由 refine-loop，**最大化即時修正比例**
 
 ### 6.2 全 AI 開發品質守門
 
@@ -184,10 +185,11 @@ implement → code-check → pre-unify-check → trace → requirement-sync → 
 - 品質 F 等級 → 建議回到 `plan` 或 `specify`
 - AI 直接決策並提出最佳建議，以利全 AI 開發作業
 
-### 6.3 LOW 成本智慧判斷
+### 6.3 成本優先智慧判斷
 
-- 修正成本合理（1-3 行修改）→ AI 自動修正
-- 修正成本過高（跨模組/架構調整）→ 登錄至 `docs/technical-debt.md`（TD-XXX 格式），直接 PR
+- 所有嚴重性問題皆先評估修正成本（Quick-Fix / Moderate / Heavy）
+- Quick-Fix（≤5 行）與 Moderate（6-20 行）→ AI 當場直接修正
+- Heavy（>20 行）→ CRITICAL/HIGH/MEDIUM 交 refine-loop；LOW 登錄至 `docs/technical-debt.md`（TD-XXX 格式）
 
 ### 6.4 PR 建立三層策略
 
@@ -260,6 +262,7 @@ AI 會提出建議，但最終由人類決定。AI 的建議是基於架構性�
 
 | 版本 | 日期 | 說明 |
 |------|------|------|
+| 1.4.0 | 2026-02-28 | 成本優先分流架構：所有嚴重性問題皆先評估修正成本，Quick-Fix/Moderate 直接修正、Heavy 依嚴重性分流（Issue #12） |
 | 1.2.0 | 2026-02-15 | 新增 Phase 7.6 TD Closure Verification：PR Review 時驗證 TD 結案一致性（正向/反向驗證） |
 | 1.1.0 | 2026-02-12 | Phase 0.4 PR Tool Readiness（gh 安裝/授權檢查）、Phase 7.5 Tech Debt 明確登錄流程、Phase 8.4 三層 PR 建立策略 |
 | 1.0.0 | 2026-02-11 | 初版：六維審查 + PR Description + AI 自主決策 |

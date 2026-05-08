@@ -22,6 +22,8 @@ $ARGUMENTS
 
 You **MUST** consider the user input before proceeding (if not empty or `--default`).
 
+> 💡 **模式判定**：`--default`、`--batch`、或無特殊標記 → **批次模式**（一次呈現所有問題）。`--interactive` 或說「逐題模式」 → 互動模式（一次一題）。
+
 ## Outline
 
 Goal: Detect and reduce ambiguity or missing decision points in the active feature specification and record the clarifications directly in the spec file.
@@ -93,7 +95,7 @@ Execution steps:
    - Clarification would not materially change implementation or validation strategy
    - Information is better deferred to planning phase (note internally)
 
-3. Generate (internally) a prioritized queue of candidate clarification questions (maximum 5). Do NOT output them all at once. Apply these constraints:
+3. Generate (internally) a prioritized queue of candidate clarification questions (maximum 5). **If in Interactive Mode**, do NOT output them all at once. Apply these constraints:
     - Maximum of 10 total questions across the whole session.
     - Each question must be answerable with EITHER:
        - A short multiple‑choice selection (2–5 distinct, mutually exclusive options), OR
@@ -104,8 +106,44 @@ Execution steps:
     - Favor clarifications that reduce downstream rework risk or prevent misaligned acceptance tests.
     - If more than 5 categories remain unresolved, select the top 5 by (Impact * Uncertainty) heuristic.
 
-4. Sequential questioning loop (interactive):
-    - Present EXACTLY ONE question at a time.
+4. Questioning Flow（依模式分流）：
+
+### 4A. Batch Mode（預設，--default / --batch / 無特殊標記）
+
+一次呈現所有問題：
+
+```markdown
+## 📋 Spec 釐清問題（批次模式）
+
+共有 **N** 個問題需要釐清。請依照下方格式一次回覆所有答案。
+
+---
+
+### Q1: [問題]
+**建議答案**：[建議選項] — [理由]
+
+| 選項 | 說明 |
+|------|------|
+| A | ... |
+| 自訂 | 請提供簡短答案（≤5 字） |
+
+---
+（依此格式列出所有問題）
+
+## 📝 回覆格式
+Q1: [A/B/建議/自訂]
+Q2: ...
+
+💡 若全部接受建議，回覆「全部採用建議」或「all recommended」。
+```
+
+解析回覆後，若有答案無效或模糊，僅重問有問題的項目。
+
+---
+
+### 4B. Interactive Mode（--interactive / 逐題模式）
+
+Sequential questioning loop — present EXACTLY ONE question at a time.
     - For multiple‑choice questions:
        - **Analyze all options** and determine the **most suitable option** based on:
           - Best practices for the project type

@@ -150,15 +150,20 @@ Feature-level 的 `contracts/`、`data-model.md` 在 SDD 架構中本質上是 S
 | C1 | 範圍溢出 | HIGH | Plan 涉及 Spec 未聲明的變更區域 |
 | C2 | 隱性依賴 | MEDIUM | Plan 的修改會影響未列出的模組 |
 | C3 | 副作用風險 | MEDIUM | Plan 的架構決策可能影響現有功能 |
+| C4 | Unify Flow 項目誤置 | MEDIUM | Plan 的實作 Phase 中出現應透過 Unify Flow 執行的任務 |
+
+**C4 偵測條件**：實作 Phase 中用 checkbox 列出涉及 `specs/system/**` 的修改項目，且附有「Unify Flow」相關警告。報告會提供具體的改寫建議（將 checklist 格式改為備忘錄格式）。
 
 #### D. 細節誤用檢查
 
 | ID | 檢查項目 | 嚴重性 | 說明 |
 |----|----------|--------|------|
-| D1 | ID 引用錯誤 | HIGH | 引用的 UI ID / Entity ID 不存在 |
+| D1 | ID 引用錯誤或碰撞 | HIGH | 引用的 UI ID / Entity ID 不存在，或與 System Spec 已定義的 ID 碰撞 |
 | D2 | 命名不一致 | MEDIUM | 與專案命名慣例不符 |
 | D3 | 路徑錯誤 | MEDIUM | Plan 中的檔案路徑格式錯誤 |
 | D4 | 版本不符 | LOW | 引用的套件版本與專案不一致 |
+
+**D1 ID 碰撞建議修正值**：當偵測到 ID 碰撞時，AI 會自動計算 System Spec 中該 ID 類型的現有最大編號，以「最大編號 + 1」為起始值連續遞補，並在報告中列出「舊 ID → 建議新 ID」對照表。
 
 #### E. 整合建議（非阻擋性）
 
@@ -408,6 +413,7 @@ specs/system/                    # System 層（整體）
 - A1-A3（重複實作）：部分適用，檢查是否有可複用的基礎設施
 - B1（共享服務）：適用，應使用已存在的共享服務
 - C1-C3（非意圖變動）：部分適用，因為是全新功能
+- C4（Unify Flow 誤置）：適用，即使是新功能仍可能誤置 Unify Flow 項目
 - D1-D4（細節誤用）：適用，ID 引用錯誤還是錯誤
 
 ### Q3：沒有 system-context.md 可以執行嗎？
@@ -429,6 +435,7 @@ specs/system/                    # System 層（整體）
 | 1.0.0 | 2026-01-23 | 初始版本，從 pre-unify-check 重新設計，聚焦非意圖性錯誤 |
 | 1.0.1 | 2026-01-25 | 新增 System 層分層讀取規則 |
 | 1.1.0 | 2026-02-14 | 新增 Bugfix/Tech Debt 類型感知、Change Set 排除規則、C 類條件式過濾 |
+| 1.2.0 | 2026-02-27 | D1 擴充為 ID 引用錯誤或碰撞，新增建議修正值計算規則；C 類新增 C4 Unify Flow 項目誤置偵測子通道；報告格式新增「建議修正值」欄位 |
 
 ---
 

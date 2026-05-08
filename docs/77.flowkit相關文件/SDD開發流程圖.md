@@ -489,11 +489,8 @@ flowchart TD
     end
 
     subgraph CodeCheck["🔍 code-check L2"]
-        XDIST_CHECK{"pytest-xdist<br/>已安裝？"}
-        INSTALL["uv add pytest-xdist<br/>自動安裝"]
-        STEP1["Step 1：快速測試（並行）<br/>-m 'not slow and not serial'<br/>-n auto"]
-        STEP2["Step 2：慢+串行測試<br/>-m 'slow or serial'<br/>（串行執行）"]
-        MERGE["合併統計<br/>passed / failed / skipped"]
+        RUN_TESTS["uv run pytest tests/<br/>-q --tb=short<br/>（串行執行）"]
+        MERGE["統計結果<br/>passed / failed / skipped"]
     end
 
     subgraph Artifacts["📂 產物"]
@@ -503,12 +500,8 @@ flowchart TD
 
     AC -->|"衍生測試案例"| WRITE_TEST
     WRITE_TEST --> CONFTEST
-    CONFTEST --> XDIST_CHECK
-    XDIST_CHECK -->|否| INSTALL
-    INSTALL --> STEP1
-    XDIST_CHECK -->|是| STEP1
-    STEP1 --> STEP2
-    STEP2 --> MERGE
+    CONFTEST --> RUN_TESTS
+    RUN_TESTS --> MERGE
     MERGE --> REPORT
     CONFTEST -->|"記錄耗時"| DURATIONS
     DURATIONS -->|"下次自動標記"| CONFTEST

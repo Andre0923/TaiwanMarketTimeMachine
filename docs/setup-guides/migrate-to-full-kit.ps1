@@ -95,6 +95,42 @@ if (-not $SkipBackup -and -not $DryRun) {
     New-Item -ItemType Directory -Path $backupPath -Force | Out-Null
 }
 
+# Step 0: 同步遷移工具（先行執行）
+# ⚠️ MUST 在所有其他步驟之前完成 — 確保目標專案日後升級可使用最新版本的遷移文件與腳本
+Write-Status "`n=== Step 0: 同步遷移工具（先行執行）===" "INFO"
+
+$step0Files = @(
+    @{Source="docs/setup-guides/migration-guide.md";    Dest="docs/setup-guides/migration-guide.md";    Reason="完整遷移指南"},
+    @{Source="docs/setup-guides/migration-quick-ref.md"; Dest="docs/setup-guides/migration-quick-ref.md"; Reason="遷移快速參考"},
+    @{Source="docs/setup-guides/migrate-to-full-kit.ps1"; Dest="docs/setup-guides/migrate-to-full-kit.ps1"; Reason="遷移腳本"}
+)
+
+foreach ($item in $step0Files) {
+    $sourcePath = Join-Path $TemplatePath $item.Source
+    $destPath   = Join-Path $TargetPath   $item.Dest
+
+    if (Test-Path $sourcePath) {
+        $destDir = Split-Path $destPath -Parent
+        if ($DryRun) {
+            Write-Status "[DRY RUN] 將同步遷移工具: $($item.Source) - $($item.Reason)" "INFO"
+        } else {
+            if (-not (Test-Path $destDir)) {
+                New-Item -ItemType Directory -Path $destDir -Force | Out-Null
+            }
+            if ((Test-Path $destPath) -and -not $SkipBackup) {
+                $backupDest = Join-Path $backupPath $item.Source
+                $backupDir  = Split-Path $backupDest -Parent
+                New-Item -ItemType Directory -Path $backupDir -Force | Out-Null
+                Copy-Item -Path $destPath -Destination $backupDest -Force
+            }
+            Copy-Item -Path $sourcePath -Destination $destPath -Force
+            Write-Status "  ✅ 同步遷移工具: $($item.Dest) ($($item.Reason))" "SUCCESS"
+        }
+    } else {
+        Write-Status "  [跳過] 範本中不存在: $($item.Source)" "WARNING"
+    }
+}
+
 # Tier 1: 直接覆蓋（無風險）
 $tier1Paths = @(
     ".specify/scripts",
@@ -192,35 +228,34 @@ if (Test-Path $devDocSource) {
     Write-Status "  [跳過] 範本中不存在: docs/01.開發人員doc" "WARNING"
 }
 
-# Migration 相關文件（setup-guides 目錄）
-$migrationFiles = @(
-    @{Source="docs/setup-guides/migration-guide.md"; Dest="docs/setup-guides/migration-guide.md"; Reason="完整遷移指南"},
-    @{Source="docs/setup-guides/migration-quick-ref.md"; Dest="docs/setup-guides/migration-quick-ref.md"; Reason="遷移快速參考"},
-    @{Source="docs/setup-guides/migrate-to-full-kit.ps1"; Dest="docs/setup-guides/migrate-to-full-kit.ps1"; Reason="遷移腳本"}
-)
+# Migration 相關文件已在 Step 0（先行執行）同步，此處跳過
+Write-Status "  [跳過] 遷移工具文件已於 Step 0 同步完成" "INFO"
 
-foreach ($item in $migrationFiles) {
-    $sourcePath = Join-Path $TemplatePath $item.Source
-    $destPath = Join-Path $TargetPath $item.Dest
-    
-    if (Test-Path $sourcePath) {
-        $destDir = Split-Path $destPath -Parent
-        if (-not (Test-Path $destDir)) {
-            if ($DryRun) {
-                Write-Status "[DRY RUN] 將建立目錄: $destDir" "INFO"
-            } else {
-                New-Item -ItemType Directory -Path $destDir -Force | Out-Null
-            }
-        }
-        
+# .flowkit/version-manifest.md（檔式：不存在時建立，已存在時提示比對）
+Write-Status "`n=== Tier 1.5: .flowkit/version-manifest.md ===" "INFO"
+
+$versionManifestSource = Join-Path $TemplatePath ".flowkit/version-manifest.md"
+$versionManifestDest   = Join-Path $TargetPath   ".flowkit/version-manifest.md"
+
+if (Test-Path $versionManifestSource) {
+    if (Test-Path $versionManifestDest) {
         if ($DryRun) {
-            Write-Status "[DRY RUN] 將複製遷移文件: $($item.Source) - $($item.Reason)" "INFO"
+            Write-Status "  [DRY RUN] .flowkit/version-manifest.md 已存在，將提示比對" "INFO"
         } else {
-            Copy-Item -Path $sourcePath -Destination $destPath -Force
-            Write-Status "  複製遷移文件: $($item.Dest) - $($item.Reason)" "SUCCESS"
+            Write-Status "  ⛏️ .flowkit/version-manifest.md 已存在" "WARNING"
+            Write-Status "  建議比對版號同步狀態：code --diff `"$versionManifestSource`" `"$versionManifestDest`"" "INFO"
         }
     } else {
-        Write-Status "  [跳過] 範本中不存在: $($item.Source)" "WARNING"
+        if ($DryRun) {
+            Write-Status "  [DRY RUN] 將建立: .flowkit/version-manifest.md" "INFO"
+        } else {
+            $destDir = Split-Path $versionManifestDest -Parent
+            if (-not (Test-Path $destDir)) {
+                New-Item -ItemType Directory -Path $destDir -Force | Out-Null
+            }
+            Copy-Item -Path $versionManifestSource -Destination $versionManifestDest -Force
+            Write-Status "  ✅ 建立: .flowkit/version-manifest.md（指令版號追蹤清單）" "SUCCESS"
+        }
     }
 }
 
@@ -484,6 +519,7 @@ if (-not $DryRun) {
     }
     
     Write-Status "`n下一步操作：" "INFO"
+    Write-Status "0. ✅ Step 0 已完成：遷移工具（migration-guide.md / migration-quick-ref.md / migrate-to-full-kit.ps1）已同步至目標專案" "SUCCESS"
     Write-Status "1. 檢查 .github/copilot-instructions.md 是否需要手動合併" "INFO"
     Write-Status "2. 🔴 確認 constitution.md 已使用範本版本（精簡優化版）" "WARNING"
     Write-Status "   → 舊版較長不代表較完整，請勿保留舊版" "WARNING"
@@ -493,7 +529,8 @@ if (-not $DryRun) {
     Write-Status "5. ⚗️ 比對 tests/conftest.py（測試基礎設施：marker 註冊與慢測試自動偵測）" "WARNING"
     Write-Status "6. 🟡 確認 pytest-xdist 依賴已安裝（並行測試必備）" "WARNING"
     Write-Status "   → 若缺少：uv add pytest-xdist" "INFO"
-    Write-Status "7. 刪除 .flowkit/memory/*.md 後執行 /flowkit.system-context 重建" "INFO"
+    Write-Status "7. .flowkit/version-manifest.md 與 .flowkit/memory/ 已處理（見上方 Tier 1.5 / Tier 3 輸出）" "SUCCESS"
+    Write-Status "   → 若 .flowkit/memory/ 已複製初始記憶，仍建議執行 /flowkit.system-context 重新產生符合本專案的內容" "INFO"
     Write-Status "8. 🟡 驗證 FlowKit 指令化已更新（不要只更新 SpecKit）" "WARNING"
     Write-Status "   → 檢查 .cursor/commands/flowkit.* 和 .github/agents/flowkit.*" "INFO"
     Write-Status "9. 執行 git diff 檢查所有變更" "INFO"

@@ -94,17 +94,17 @@ specify → plan → tasks → analyze → implement
 |------|------|------|----------|
 | L0 | Gatekeeper | 環境版本、工具可用性、Feature 偵測 | ❌ → STOP |
 | L1 | Static Analysis | 編譯、型別、語法、lint | ❌ → STOP |
-| L2 | Unit Tests + Regression | 測試通過 + 零 Feature 回歸（並行 + 慢測試/不可並行測試分批） | ❤️ → STOP |
-| L3 | Integration | API 端點 smoke test（含 port 檢查） | ❌ → 記錄，可 SKIP |
-| L4 | E2E | 端對端驗證（策略 A：專案 E2E 測試如 Playwright；策略 B：Browser 工具） | ❌ → 記錄，可 SKIP |
+| L2 | Unit Tests + Regression | 測試通過 + 零 Feature 回歸 | ❤️ → STOP |
+| L3 | Integration | API 端點 smoke test（含 port 檢查） | ❌ → 記錄，可 SKIP || L3.5 | Usability Gate | 啟動腳本可用性（U1）+ 首頁可及性（U2）+ 環境一致性（U3 WARNING）+ Zombie Port（U4 WARNING） | U1/U2 ❌ → FAIL；U3/U4 ⚠️ → WARNING || L4 | E2E | 端對端驗證（策略 A：專案 E2E 測試；策略 C：CDP 即時互動驗證；策略 B：Browser 工具） | ❌ → 記錄，可 SKIP |
 | L5 | Manual Smoke | 人類處理 Escalation 項目 | 不影響自動判定 |
 
 ### 3.3 最終判定規則
 
 | 條件 | 判定 | 後續行動 |
 |------|------|----------|
-| L0-L4 全 PASS | ✅ PASS | 進入 pre-unify-check |
-| L0-L2 PASS，L3/L4 SKIP | 🟡 CONDITIONAL | 確認後可進入 |
+| L0-L4 全 PASS（含 L3.5 PASS 或 SKIP） | ✅ PASS | 進入 pre-unify-check |
+| L0-L2 PASS，L3/L3.5/L4 SKIP | 🟡 CONDITIONAL | 確認後可進入 |
+| L3.5 FAIL（U1 或 U2 失敗） | ❌ FAIL | 進入 refine-loop 修復啟動路徑 |
 | L0 或 L1 FAIL | ❌ FAIL | 進入 refine-loop 修復後重跑 code-check |
 
 ---
@@ -176,7 +176,8 @@ specify → plan → tasks → analyze → implement
 | 工具 | 影響層級 | 降級策略 |
 |------|----------|----------|
 | Pylance MCP | L1 靜態分析 | 改用 `ast.parse()` 基本語法檢查 |
-| Browser 工具 | L4 E2E | 跳過 L4 + 記錄 Escalation |
+| Browser 工具 | L4 E2E（策略 B） | 降級至策略 C（CDP）或跳過 L4 + 記錄 Escalation |
+| CDP 端點 | L4 E2E（策略 C） | Electron: `--remote-debugging-port=9222`；Web: Chrome DevTools MCP；不可用則降級至策略 B |
 
 > **設計原則**：工具應在專案中**預先配置**，而非在驗證流程中安裝。
 > 驗證流程中不安裝任何新依賴，確保「驗證環境 = 執行環境」。
@@ -227,8 +228,21 @@ AI 無法自動處理的項目會記錄在驗證報告的 Escalation Log 中：
 | 等級 | 意義 | 行動 |
 |------|------|------|
 | 🔴 HIGH | 阻斷性問題 | MUST 立即處理 |
-| 🟡 LOW | 非功能性瑕疵 | SHOULD 下次迭代處理 |
-| 🔵 DEFERRED | 需人工/跨平台驗證 | MAY 依排程處理 |
+| 🟡 LOW | 非功能性疑疵 | E2 BUGFIX Triage 分流（見下方） |
+| 🔵 DEFERRED | 需人工/跨平台驗證 | E2 BUGFIX Triage 分流：成本 ≤ MEDIUM → BUGFIX；其餘 → TD |
+
+### 8.1 E2 BUGFIX Triage（v1.10.0 擴充）
+
+Phase 5 產出報告前，code-check 會對所有 🟡 LOW 和 🔵 DEFERRED 項目執行 BUGFIX Triage：
+
+| 評估條件 | 分流結果 |
+|----------|----------|
+| 不需改 spec + 成本 EASY/MEDIUM | **BUGFIX** → 加入 `bug-fix-list-feature-NNN.md` |
+| 需改 spec 或成本 HIGH | **DEFERRED** → 登記 TD |
+
+BUGFIX 項目透過 `refine-loop --default` 的 Bug-Fix 模式在當前 Feature 閉環修復，不累積為技術債。
+
+> 此機制與 §2.5 非功能回歸分流互補：§2.5 處理 L2 非功能測試失敗，E2 BUGFIX Triage 處理所有層級的 🟡 LOW 和 🔵 DEFERRED 項目。
 
 ---
 
@@ -258,10 +272,15 @@ AI 無法自動處理的項目會記錄在驗證報告的 Escalation Log 中：
 
 | 版本 | 日期 | 說明 |
 |------|------|------|
-| v1.8.0 | 2026-02-16 | 非功能回歸分流（Bug-Fix Triage）+ pytest-xdist 自動安裝改為安裝失敗降級串行 |
-| v1.7.0 | 2026-02-15 | pytest-xdist 未安裝改為自動安裝（不降級）、慢測試閾值調整為 30 秒 |
-| v1.6.0 | 2026-02-15 | 慢測試自動標記 + serial 標記：conftest.py 根據歷史耗時自動標記 @pytest.mark.slow、新增 @pytest.mark.serial 不可並行測試標記、pytest-xdist 加入範本必備依賴、implement 指令新增測試標記指引 |
-| v1.5.0 | 2026-02-15 | L2 並行執行 + 慢測試分批：pytest-xdist `-n auto` 並行快速測試、`@pytest.mark.slow` 慢測試串行執行、conftest.py 慢測試候選自動偵測 |
+| v1.13.0 | 2026-04-02 | 移除 pytest-xdist 並行測試機制：改為單次串行執行、移除 serial 標記、簡化 L2 測試執行策略；新增 L4 Skip Quality Analysis + allowed-skips.md 白名單；L2 Lint Baseline；L3.5 用字修正 |
+| v1.12.0 | 2026-04-01 | L3.5 Usability Gate（Issue #19）：新增第六層驗證—啟動腳本可用性（U1）、首頁可及性（U2）、環境一致性（U3 WARNING）、Zombie Process 債測（U4 WARNING）；U1/U2 FAIL 阻斷 L4；新增 `--skip-usability` 旗標；第四個進入條件新增 L3.5 SKIP 記錄 |
+| v1.11.0 | 2026-03-02 | L4 策略 C （CDP 即時互動驗證）（Issue #17）：Flask/Web 應用透過 Chrome DevTools MCP 進行 CDP 連線、首頁驗證、截圖存檔；策略優先順序 A → C → B → SKIP |
+| v1.10.0 | 2026-03-01 | E2 BUGFIX Triage 擴充：將 🔵 DEFERRED 項目納入 Triage 評估範圍，成本 ≤ MEDIUM 且不需改 spec 則分流為 BUGFIX（Issue #13） |
+| v1.9.0 | 2026-02-27 | Phase 5 新增 E2 BUGFIX Triage：所有層級的 🟡 LOW 項目統一分流（BUGFIX → bug-fix-list / DEFERRED → TD），TD 登記排除 BUGFIX 項目，報告範本新增分流結果區段（Issue #7） |
+| v1.8.0 | 2026-02-16 | 非功能回歸分流（Bug-Fix Triage） |
+| v1.7.0 | 2026-02-15 | 慢測試閾值調整為 30 秒 |
+| v1.6.0 | 2026-02-15 | 慢測試自動標記：conftest.py 根據歷史耗時自動標記 @pytest.mark.slow、implement 指令新增測試標記指引 |
+| v1.5.0 | 2026-02-15 | L2 慢測試分批：@pytest.mark.slow 慢測試識別、conftest.py 慢測試候選自動偵測 |
 | v1.2.0 | 2026-02-08 | 報告命名統一：`verify-report-feature-*` → `code-check-report-feature-*` |
 | v1.1.0 | 2026-02-03 | 唯讀描述精確化、回歸缺口補強（CONDITIONAL）、Flake Detection、Port 檢查 |
 | v1.0.0 | 2025-01-21 | 初始版本：五層驗證金字塔、降級策略、回歸分析 |
