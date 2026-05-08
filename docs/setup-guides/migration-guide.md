@@ -117,167 +117,82 @@ git commit -m "chore: 升級至完整 SpecKit + FlowKit 套件"
 
 ---
 
-## 🛠️ 方案 B：增量遷移（最安全）
+## 🛠️ 方案 B：升級現有專案（Scenario B）
 
 ### 適用情境
-- 成熟專案，有大量客製化
-- 需要完全掌控每個變更
-- 時間充裕
+- 已有使用 SpecKit 的專案
+- 希望直接升級到完整套件（以遷移腳本自動處理）
+- 需明確避開相對路徑造成的錯誤
 
 ### 執行步驟
 
-#### Phase 0: 先同步遷移工具（確保使用最新版本）
-
-> **執行原因**：必須在所有其他步驟之前先完成。確保目標專案有最新版本的遷移文件與腳本，
-> 日後升級時可直接從目標專案取得最新工具。
-
 ```powershell
-cd speckit-template  # 切換到範本目錄
+# ⚠️ 重要：請使用「絕對路徑」避免路徑錯誤
+# 範例假設：
+#   - 範本位置：E:\templates\spec-kit-template
+#   - 目標專案：E:\projects\my-project
 
-# 先同步遷移工具到目標專案
-$guidesDest = "E:\path\to\old-project\docs\setup-guides"
-New-Item -ItemType Directory -Path $guidesDest -Force | Out-Null
-@(
-    "docs/setup-guides/migration-guide.md",
-    "docs/setup-guides/migration-quick-ref.md",
-    "docs/setup-guides/migrate-to-full-kit.ps1"
-) | ForEach-Object {
-    Copy-Item -Path $_ -Destination $guidesDest -Force
-    Write-Host "✅ 已同步遷移工具: $_"
-}
-```
+# 1. Clone 模板到臨時目錄（注意 Clone 後的絕對路徑）
+git clone https://github.com/DrDeer119/99.spec-kit-cross-platform-template.git E:\templates\spec-kit-template
 
-#### Phase 1: 核心工具遷移
+# 2. 確認遷移腳本路徑存在
+$templatePath = "E:\templates\spec-kit-template"
+$targetPath = "E:\projects\my-project"
+Test-Path "$templatePath\docs\setup-guides\migrate-to-full-kit.ps1"  # 應回傳 True
 
-```powershell
-cd speckit-template
+# 3. 執行自動化遷移（使用絕對路徑）
+& "$templatePath\docs\setup-guides\migrate-to-full-kit.ps1" `
+    -TemplatePath $templatePath `
+    -TargetPath $targetPath
 
-# 1. 複製 SpecKit 腳本
-Copy-Item -Path ".specify/scripts" -Destination "E:\path\to\old-project\.specify\" -Recurse -Force
+# 4. 確認遷移結果（腳本執行時已自動報告 ✅/❌）
+cd $targetPath
+git status  # 確認新增的檔案是否符合預期
 
-# 2. 複製 SpecKit 範本
-Copy-Item -Path ".specify/templates" -Destination "E:\path\to\old-project\.specify\" -Recurse -Force
-
-# 3. 複製 FlowKit 範本
-New-Item -ItemType Directory -Path "E:\path\to\old-project\.flowkit" -Force
-Copy-Item -Path ".flowkit/templates" -Destination "E:\path\to\old-project\.flowkit\" -Recurse -Force
-
-# 3.5 version-manifest.md（條件式：不存在時建立，已存在時比對）
-$vmDest = "E:\path\to\old-project\.flowkit\version-manifest.md"
-if (-not (Test-Path $vmDest)) {
-    Copy-Item -Path ".flowkit\version-manifest.md" -Destination "E:\path\to\old-project\.flowkit\" -Force
-    Write-Host "✅ 已建立 .flowkit/version-manifest.md（指令版號追蹤清單）"
-} else {
-    Write-Host "ℹ️ .flowkit/version-manifest.md 已存在，建議手動比對版號同步狀態"
-    code --diff ".flowkit\version-manifest.md" $vmDest
-}
-
-# 3.6 .flowkit/memory/（條件式：完全無檔案時才從範本複製）
-$memDest = "E:\path\to\old-project\.flowkit\memory"
-$existingMem = if (Test-Path $memDest) { @(Get-ChildItem $memDest -File) } else { @() }
-if ($existingMem.Count -eq 0) {
-    New-Item -ItemType Directory -Path $memDest -Force | Out-Null
-    Copy-Item -Path ".flowkit\memory\*" -Destination $memDest -Force
-    Write-Host "✅ 已複製 .flowkit/memory/ 初始記憶檔案"
-    Write-Host "💡 建議執行 /flowkit.system-context 重新產生符合本專案的內容"
-} else {
-    Write-Host "✅ .flowkit/memory/ 已有 $($existingMem.Count) 個檔案，保留現有記憶"
-}
-```
-
-#### Phase 2: 指令化檔案遷移
-
-```powershell
-# 4. GitHub Copilot Agents
-Copy-Item -Path ".github/agents" -Destination "E:\path\to\old-project\.github\" -Recurse -Force
-Copy-Item -Path ".github/prompts" -Destination "E:\path\to\old-project\.github\" -Recurse -Force
-
-# 5. Cursor Commands
-Copy-Item -Path ".cursor/commands" -Destination "E:\path\to\old-project\.cursor\" -Recurse -Force
-```
-
-#### Phase 3: 文件遷移
-
-```powershell
-# 6. 目錄結構文件（⚗️ 智慧比對，不直接覆蓋）
-# ℹ️ 每個專案的目錄結構可能不同，建議手動比對後合併
-code --diff "docs/00.目錄結構.md" "E:\path\to\old-project\docs\00.目錄結構.md"
-# 確認範本中的標準目錄規範已涵蓋，但保留專案特有的目錄說明
-
-# 7. FlowKit 相關文件（直接覆蓋）
-Copy-Item -Path "docs/77.flowkit相關文件" -Destination "E:\path\to\old-project\docs\" -Recurse -Force
-Copy-Item -Path "docs/76.改版歷史" -Destination "E:\path\to\old-project\docs\" -Recurse -Force
-
-# 8. 開發人員文件
-New-Item -ItemType Directory -Path "E:\path\to\old-project\docs\01.開發人員doc" -Force
-Copy-Item -Path "docs/01.開發人員doc\*" -Destination "E:\path\to\old-project\docs\01.開發人員doc\" -Force
-```
-
-#### Phase 3.5: 範本檔案與遷移文件複製
-
-```powershell
-# 9. 需求文件範本（可選 — 成熟專案通常已有自己的範本）
-# ℹ️ 成熟專案（> 6 個月）通常不需要複製需求文件範本，因為專案可能已有客製化的範本。
-# 若專案還沒有範本，再執行以下步驟：
-# New-Item -ItemType Directory -Path "E:\path\to\old-project\docs\requirements\Milestone" -Force
-# New-Item -ItemType Directory -Path "E:\path\to\old-project\docs\requirements\user-stories" -Force
-# Copy-Item -Path "docs/requirements/Milestone/MNN-MilestoneName-template.md" -Destination "E:\path\to\old-project\docs\requirements\Milestone\" -Force
-# Copy-Item -Path "docs/requirements/user-stories/README-template.md" -Destination "E:\path\to\old-project\docs\requirements\user-stories\" -Force
-# Copy-Item -Path "docs/requirements/user-stories/US-X-GroupName-template.md" -Destination "E:\path\to\old-project\docs\requirements\user-stories\" -Force
-
-# 10. Migration 相關文件已於 Phase 0 完成同步，此處跳過
-# （若對於 Phase 0 有痕跨，可手動步驟）
-# New-Item -ItemType Directory -Path "E:\path\to\old-project\docs\setup-guides" -Force
-# @("migration-guide.md", "migration-quick-ref.md", "migrate-to-full-kit.ps1") | ForEach-Object {
-#     Copy-Item -Path "docs/setup-guides/$_" -Destination "E:\path\to\old-project\docs\setup-guides\" -Force
-# }
-
-# 11. Technical Debt Registry（⚗️ 智慧判斷）
-$tdDest = "E:\path\to\old-project\docs\technical-debt.md"
-if (-not (Test-Path $tdDest)) {
-    # 專案還沒有 TD Registry，複製範本
-    Copy-Item -Path "docs/technical-debt.md" -Destination $tdDest -Force
-    Write-Host "✅ 已建立 technical-debt.md"
-} else {
-    # 已有 TD Registry，手動比對是否需要合併新範本的欄位/規則
-    Write-Host "ℹ️ technical-debt.md 已存在，建議手動比對範本版本是否有新欄位或規則更新"
-    code --diff "docs/technical-debt.md" $tdDest
-}
-```
-
-#### Phase 4: 規範檔案處理
-
-```powershell
-# 12. copilot-instructions.md（需手動比對）
-code --diff .github/copilot-instructions.md E:\path\to\old-project\.github\copilot-instructions.md
-
-# 13. constitution.md（🔴 MUST 更新）
-# ⚠️ 重要：範本中的 constitution.md 是「刻意製造的簡化版」
-# AI 常因看到舊專案的版本較長而誤以為是「完整版」，拒絕更新
-# 請務必使用範本版本並手動合併客製化規則
-code --diff .specify/memory/constitution.md E:\path\to\old-project\.specify\memory\constitution.md
-Copy-Item -Path ".specify/memory/constitution.md" -Destination "E:\path\to\old-project\.specify\memory\" -Force
-```
-
-> ⚠️ **關鍵提醒**：
-> - **constitution.md**：範本中是精簡優化版，舊專案可能有冗長的舊版本。請**務必更新為範本版本**，再手動補回客製化規則。(除使用者明確表示不需要更新外)
-> - **FlowKit 指令化**：確保 `.cursor/commands/` 和 `.github/agents/` 中的 FlowKit 指令已更新，不要只更新 SpecKit。
-
-#### Phase 5: AI 記憶處理（條件式）
-
-```powershell
-cd E:\path\to\old-project
-
-# 14. 檢查 system-context 是否已存在
-# 遷移不會改變專案結構，已有的上下文仍然有效
+# 5. AI 記憶處理（條件式）
+# 若專案尚未有 system-context，才需要建立：
 if (-not (Test-Path ".flowkit/memory/system-context.md")) {
-    # 15. 尚未建立，在 Copilot Chat 或 Cursor 中執行
-    # /flowkit.system-context
+    # 在 Copilot Chat 執行：/flowkit.system-context
     Write-Host "⚠️ 尚未建立 system-context，請在 IDE 中執行 /flowkit.system-context"
 } else {
-    Write-Host "✅ system-context 已存在，無需重建"
+    Write-Host "✅ system-context 已存在，遷移不影響專案結構，無需重建"
 }
 ```
+
+### ⚠️ 路徑問題排查
+
+若執行遷移腳本時出現「找不到路徑」錯誤，請：
+
+1. 確認 Clone 時使用的絕對路徑
+2. 使用 `Test-Path` 確認腳本路徑存在
+3. 避免使用相對路徑（如 `..\temp-template`）
+
+### 💡 Dropbox / 雲端同步環境注意事項
+
+- 若遇到「檔案被占用」錯誤，腳本會自動重試（最多 3 次，每次間隔 2 秒）
+- 建議將範本 Clone 到非同步目錄（如 `$env:TEMP`）以避免檔案占用問題
+- 若重試仍失敗，請暫時暫停雲端同步服務後重新執行
+
+範例（使用本機暫存目錄）：
+
+```powershell
+$tempPath = "$env:TEMP\speckit-template-$(Get-Date -Format 'yyyyMMddHHmmss')"
+git clone https://github.com/DrDeer119/99.spec-kit-cross-platform-template.git $tempPath
+$templatePath = $tempPath
+```
+
+### 📁 後續目錄調整建議
+
+遷移完成後，請參考 `docs/00.目錄結構.md` 調整專案目錄結構，特別是：
+
+- 測試目錄：確保 `tests/` 存在且對應 `src/` 結構
+- 日誌目錄：確保 `logs/` 存在，日誌不應散落在專案根目錄
+- 測試產物目錄：建立 `.artifacts/` 存放所有測試產物（coverage、pytest cache、htmlcov 等），並加入 `.gitignore`
+
+### 參考文件
+
+- 遷移指南：`docs/setup-guides/migration-guide.md`
+- 快速參考：`docs/setup-guides/migration-quick-ref.md`
 
 ---
 
